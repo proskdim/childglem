@@ -160,12 +160,12 @@ function byteArrayToInt(byteArray, start3, end, isBigEndian, isSigned) {
   }
 }
 function byteArrayToFloat(byteArray, start3, end, isBigEndian) {
-  const view4 = new DataView(byteArray.buffer);
+  const view5 = new DataView(byteArray.buffer);
   const byteSize = end - start3;
   if (byteSize === 8) {
-    return view4.getFloat64(start3, !isBigEndian);
+    return view5.getFloat64(start3, !isBigEndian);
   } else if (byteSize === 4) {
-    return view4.getFloat32(start3, !isBigEndian);
+    return view5.getFloat32(start3, !isBigEndian);
   } else {
     const msg = `Sized floats must be 32-bit or 64-bit on JavaScript, got size of ${byteSize * 8} bits`;
     throw new globalThis.Error(msg);
@@ -2518,14 +2518,14 @@ var LustreClientApplication = class _LustreClientApplication {
    *
    * @returns {Gleam.Ok<(action: Lustre.Action<Lustre.Client, Msg>>) => void>}
    */
-  static start({ init: init5, update: update4, view: view4 }, selector, flags) {
+  static start({ init: init6, update: update5, view: view5 }, selector, flags) {
     if (!is_browser())
       return new Error(new NotABrowser());
     const root = selector instanceof HTMLElement ? selector : document.querySelector(selector);
     if (!root)
       return new Error(new ElementNotFound(selector));
-    const app3 = new _LustreClientApplication(root, init5(flags), update4, view4);
-    return new Ok((action) => app3.send(action));
+    const app4 = new _LustreClientApplication(root, init6(flags), update5, view5);
+    return new Ok((action) => app4.send(action));
   }
   /**
    * @param {Element} root
@@ -2535,11 +2535,11 @@ var LustreClientApplication = class _LustreClientApplication {
    *
    * @returns {LustreClientApplication}
    */
-  constructor(root, [init5, effects], update4, view4) {
+  constructor(root, [init6, effects], update5, view5) {
     this.root = root;
-    this.#model = init5;
-    this.#update = update4;
-    this.#view = view4;
+    this.#model = init6;
+    this.#update = update5;
+    this.#view = view5;
     this.#tickScheduled = window.requestAnimationFrame(
       () => this.#tick(effects.all.toArray(), true)
     );
@@ -2652,7 +2652,7 @@ var LustreClientApplication = class _LustreClientApplication {
   }
 };
 var start = LustreClientApplication.start;
-var make_lustre_client_component = ({ init: init5, update: update4, view: view4, on_attribute_change }, name) => {
+var make_lustre_client_component = ({ init: init6, update: update5, view: view5, on_attribute_change }, name) => {
   if (!is_browser())
     return new Error(new NotABrowser());
   if (!name.includes("-"))
@@ -2660,7 +2660,7 @@ var make_lustre_client_component = ({ init: init5, update: update4, view: view4,
   if (window.customElements.get(name)) {
     return new Error(new ComponentAlreadyRegistered(name));
   }
-  const [model, effects] = init5(void 0);
+  const [model, effects] = init6(void 0);
   const hasAttributes = on_attribute_change instanceof Some;
   const component = class LustreClientComponent extends HTMLElement {
     /**
@@ -2743,7 +2743,7 @@ var make_lustre_client_component = ({ init: init5, update: update4, view: view4,
           );
           this.#queue = [];
           this.#model = action[0][0];
-          const vdom = view4(this.#model);
+          const vdom = view5(this.#model);
           const dispatch = (handler, immediate = false) => (event2) => {
             const result = handler(event2);
             if (result instanceof Ok) {
@@ -2794,7 +2794,7 @@ var make_lustre_client_component = ({ init: init5, update: update4, view: view4,
         return;
       this.#tickScheduled = void 0;
       this.#flush(effects2);
-      const vdom = view4(this.#model);
+      const vdom = view5(this.#model);
       const dispatch = (handler, immediate = false) => (event2) => {
         const result = handler(event2);
         if (result instanceof Ok) {
@@ -2807,7 +2807,7 @@ var make_lustre_client_component = ({ init: init5, update: update4, view: view4,
     #flush(effects2 = []) {
       while (this.#queue.length > 0) {
         const msg = this.#queue.shift();
-        const [next, effect] = update4(this.#model, msg);
+        const [next, effect] = update5(this.#model, msg);
         effects2 = effects2.concat(effect.all.toArray());
         this.#model = next;
       }
@@ -2882,20 +2882,20 @@ var make_lustre_client_component = ({ init: init5, update: update4, view: view4,
   return new Ok(void 0);
 };
 var LustreServerApplication = class _LustreServerApplication {
-  static start({ init: init5, update: update4, view: view4, on_attribute_change }, flags) {
-    const app3 = new _LustreServerApplication(
-      init5(flags),
-      update4,
-      view4,
+  static start({ init: init6, update: update5, view: view5, on_attribute_change }, flags) {
+    const app4 = new _LustreServerApplication(
+      init6(flags),
+      update5,
+      view5,
       on_attribute_change
     );
-    return new Ok((action) => app3.send(action));
+    return new Ok((action) => app4.send(action));
   }
-  constructor([model, effects], update4, view4, on_attribute_change) {
+  constructor([model, effects], update5, view5, on_attribute_change) {
     this.#model = model;
-    this.#update = update4;
-    this.#view = view4;
-    this.#html = view4(model);
+    this.#update = update5;
+    this.#view = view5;
+    this.#html = view5(model);
     this.#onAttributeChange = on_attribute_change;
     this.#renderers = /* @__PURE__ */ new Map();
     this.#handlers = handlers(this.#html);
@@ -2996,11 +2996,11 @@ var is_browser = () => globalThis.window && window.document;
 
 // build/dev/javascript/lustre/lustre.mjs
 var App = class extends CustomType {
-  constructor(init5, update4, view4, on_attribute_change) {
+  constructor(init6, update5, view5, on_attribute_change) {
     super();
-    this.init = init5;
-    this.update = update4;
-    this.view = view4;
+    this.init = init6;
+    this.update = update5;
+    this.view = view5;
     this.on_attribute_change = on_attribute_change;
   }
 };
@@ -3024,15 +3024,15 @@ var ElementNotFound = class extends CustomType {
 };
 var NotABrowser = class extends CustomType {
 };
-function application(init5, update4, view4) {
-  return new App(init5, update4, view4, new None());
+function application(init6, update5, view5) {
+  return new App(init6, update5, view5, new None());
 }
-function start2(app3, selector, flags) {
+function start2(app4, selector, flags) {
   return guard(
     !is_browser(),
     new Error(new NotABrowser()),
     () => {
-      return start(app3, selector, flags);
+      return start(app4, selector, flags);
     }
   );
 }
@@ -5117,6 +5117,22 @@ function app2() {
   return application(init3, update2, view2);
 }
 
+// build/dev/javascript/childglem/table/table.mjs
+function init4(_) {
+  return [0, none()];
+}
+function update3(model, msg) {
+  {
+    return [model, none()];
+  }
+}
+function view3(_) {
+  return div(toList([]), toList([text("table-component")]));
+}
+function app3() {
+  return application(init4, update3, view3);
+}
+
 // build/dev/javascript/childglem/childglem.mjs
 var Router = class extends CustomType {
   constructor(page) {
@@ -5130,10 +5146,10 @@ var AuthSignin = class extends CustomType {
 };
 var AuthLogout = class extends CustomType {
 };
-function init4(_) {
+function init5(_) {
   return [new Router(new AuthSignup()), none()];
 }
-function update3(_, msg) {
+function update4(_, msg) {
   if (msg instanceof AuthSignup) {
     return [new Router(new AuthSignup()), none()];
   } else if (msg instanceof AuthSignin) {
@@ -5143,7 +5159,7 @@ function update3(_, msg) {
     return [new Router(new AuthSignin()), none()];
   }
 }
-function view3(router) {
+function view4(router) {
   let button_style = toList([
     ["display", "flex"],
     ["gap", "10px"],
@@ -5216,7 +5232,10 @@ function view3(router) {
                 );
               }
             } else {
-              return div(toList([]), toList([text("table")]));
+              return div(
+                toList([]),
+                toList([element("my-table", toList([]), toList([]))])
+              );
             }
           })()
         ])
@@ -5227,19 +5246,20 @@ function view3(router) {
 function main() {
   let $ = make_lustre_client_component(app2(), "my-signup");
   let $1 = make_lustre_client_component(app(), "my-signin");
-  let app3 = application(init4, update3, view3);
-  let $2 = start2(app3, "#app", 0);
-  if (!$2.isOk()) {
+  let $2 = make_lustre_client_component(app3(), "my-table");
+  let app4 = application(init5, update4, view4);
+  let $3 = start2(app4, "#app", 0);
+  if (!$3.isOk()) {
     throw makeError(
       "let_assert",
       "childglem",
-      33,
+      35,
       "main",
       "Pattern match failed, no pattern matched the value.",
-      { value: $2 }
+      { value: $3 }
     );
   }
-  return $2;
+  return $3;
 }
 
 // build/.lustre/entry.mjs

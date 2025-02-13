@@ -1,3 +1,4 @@
+import table/table
 import auth/jwt
 import auth/signin
 import auth/signup
@@ -28,6 +29,7 @@ pub type Pages {
 pub fn main() {
   let _ = lustre.register(signup.app(), "my-signup")
   let _ = lustre.register(signin.app(), "my-signin")
+  let _ = lustre.register(table.app(), "my-table")
 
   let app = lustre.application(init, update, view)
   let assert Ok(_) = lustre.start(app, "#app", 0)
@@ -91,7 +93,7 @@ pub fn view(router: Router) -> Element(Msg) {
         }
 
         False -> {
-          html.div([], [element.text("table")])
+          html.div([], [element("my-table", [], [])])
         }
       },
     ]),
