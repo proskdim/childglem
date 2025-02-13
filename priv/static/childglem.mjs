@@ -4469,10 +4469,10 @@ function post(url, body, handler) {
 }
 
 // build/dev/javascript/plinth/storage_ffi.mjs
-function localStorage() {
+function sessionStorage() {
   try {
-    if (globalThis.Storage && globalThis.localStorage instanceof globalThis.Storage) {
-      return new Ok(globalThis.localStorage);
+    if (globalThis.Storage && globalThis.sessionStorage instanceof globalThis.Storage) {
+      return new Ok(globalThis.sessionStorage);
     } else {
       return new Error(null);
     }
@@ -4492,7 +4492,7 @@ function setItem(storage, keyName, keyValue) {
 // build/dev/javascript/childglem/auth/jwt.mjs
 function save(token, storage_key) {
   return try$(
-    localStorage(),
+    sessionStorage(),
     (local_storage) => {
       return setItem(local_storage, storage_key, token);
     }
