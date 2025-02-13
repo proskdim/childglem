@@ -10,6 +10,7 @@ import gleam/list
 import gleam/result
 import gleam/uri
 import lustre
+import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
@@ -111,15 +112,62 @@ pub fn view(model: Reservation) -> Element(Msg) {
   let limit = int.to_string(model.limit)
   let page = int.to_string(model.page)
 
+  let table_style = [
+    #("width", "100%"),
+    #("margin-bottom", "20px"),
+    #("border", "15px solid #F2F8F8"),
+    #("border-top", "5px solid #F2F8F8"),
+    #("border-collapse", "collapse"),
+  ]
+
+  let table_th_style = [
+    #("font-weight", "bold"),
+    #("padding", "5px"),
+    #("border", "none"),
+    #("background", "#F2F8F8"),
+    #("border-bottom", "5px solid #F2F8F8"),
+  ]
+
+  let table_td_style = [
+    #("padding", "5px"),
+    #("border-bottom", "5px solid #F2F8F8"),
+    #("border", "none"),
+  ]
+
+  let info_style = [
+    #("display", "flex"),
+    #("gap", "5px"),
+    #("margin-bottom", "10px"),
+  ]
+
   html.div([], [
-    element.text("Total: " <> total),
-    element.text("Limit: " <> limit),
-    element.text("Page: " <> page),
-    html.ol(
-      [],
-      list.map(model.childs, fn(child) {
-        html.li([], [element.text(child.name)])
-      }),
-    ),
+    html.div([attribute.style(info_style)], [
+      html.span([], [element.text("Info: ")]),
+      html.div([attribute.style([#("display", "flex"), #("gap", "10px")])], [
+        html.span([], [element.text("Total childs: " <> total)]),
+        html.span([], [element.text("Limit rows: " <> limit)]),
+        html.span([], [element.text("Page number: " <> page)]),
+      ]),
+    ]),
+    html.table([attribute.style(table_style)], [
+      html.tr([], [
+        html.th([attribute.style(table_th_style)], [element.text("full name")]),
+        html.th([attribute.style(table_th_style)], [element.text("age")]),
+        html.th([attribute.style(table_th_style)], [element.text("birthday")]),
+      ]),
+      html.tbody(
+        [],
+        list.map(model.childs, fn(child) {
+          html.tr([], [
+            html.td([attribute.style(table_td_style)], [
+              element.text(child.name),
+            ]),
+            html.td([attribute.style(table_td_style)], [
+              element.text(int.to_string(child.age)),
+            ]),
+          ])
+        }),
+      ),
+    ]),
   ])
 }

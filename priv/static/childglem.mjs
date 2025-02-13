@@ -3226,14 +3226,23 @@ function h1(attrs, children2) {
 function div(attrs, children2) {
   return element("div", attrs, children2);
 }
-function li(attrs, children2) {
-  return element("li", attrs, children2);
-}
-function ol(attrs, children2) {
-  return element("ol", attrs, children2);
-}
 function span(attrs, children2) {
   return element("span", attrs, children2);
+}
+function table(attrs, children2) {
+  return element("table", attrs, children2);
+}
+function tbody(attrs, children2) {
+  return element("tbody", attrs, children2);
+}
+function td(attrs, children2) {
+  return element("td", attrs, children2);
+}
+function th(attrs, children2) {
+  return element("th", attrs, children2);
+}
+function tr(attrs, children2) {
+  return element("tr", attrs, children2);
 }
 function button(attrs, children2) {
   return element("button", attrs, children2);
@@ -5681,7 +5690,7 @@ function update3(model, msg) {
       throw makeError(
         "let_assert",
         "table/table",
-        51,
+        52,
         "update",
         "Pattern match failed, no pattern matched the value.",
         { value: $ }
@@ -5703,20 +5712,100 @@ function view3(model) {
   let total = to_string(model.total);
   let limit = to_string(model.limit);
   let page = to_string(model.page);
+  let table_style = toList([
+    ["width", "100%"],
+    ["margin-bottom", "20px"],
+    ["border", "15px solid #F2F8F8"],
+    ["border-top", "5px solid #F2F8F8"],
+    ["border-collapse", "collapse"]
+  ]);
+  let table_th_style = toList([
+    ["font-weight", "bold"],
+    ["padding", "5px"],
+    ["border", "none"],
+    ["background", "#F2F8F8"],
+    ["border-bottom", "5px solid #F2F8F8"]
+  ]);
+  let table_td_style = toList([
+    ["padding", "5px"],
+    ["border-bottom", "5px solid #F2F8F8"],
+    ["border", "none"]
+  ]);
+  let info_style = toList([
+    ["display", "flex"],
+    ["gap", "5px"],
+    ["margin-bottom", "10px"]
+  ]);
   return div(
     toList([]),
     toList([
-      text("Total: " + total),
-      text("Limit: " + limit),
-      text("Page: " + page),
-      ol(
-        toList([]),
-        map(
-          model.childs,
-          (child) => {
-            return li(toList([]), toList([text(child.name)]));
-          }
-        )
+      div(
+        toList([style(info_style)]),
+        toList([
+          span(toList([]), toList([text("Info: ")])),
+          div(
+            toList([
+              style(toList([["display", "flex"], ["gap", "10px"]]))
+            ]),
+            toList([
+              span(
+                toList([]),
+                toList([text("Total childs: " + total)])
+              ),
+              span(
+                toList([]),
+                toList([text("Limit rows: " + limit)])
+              ),
+              span(
+                toList([]),
+                toList([text("Page number: " + page)])
+              )
+            ])
+          )
+        ])
+      ),
+      table(
+        toList([style(table_style)]),
+        toList([
+          tr(
+            toList([]),
+            toList([
+              th(
+                toList([style(table_th_style)]),
+                toList([text("full name")])
+              ),
+              th(
+                toList([style(table_th_style)]),
+                toList([text("age")])
+              ),
+              th(
+                toList([style(table_th_style)]),
+                toList([text("birthday")])
+              )
+            ])
+          ),
+          tbody(
+            toList([]),
+            map(
+              model.childs,
+              (child) => {
+                return tr(
+                  toList([]),
+                  toList([
+                    td(
+                      toList([style(table_td_style)]),
+                      toList([text(child.name)])
+                    ),
+                    td(
+                      toList([style(table_td_style)]),
+                      toList([text(to_string(child.age))])
+                    )
+                  ])
+                );
+              }
+            )
+          )
+        ])
       )
     ])
   );
