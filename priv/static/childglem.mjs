@@ -5575,9 +5575,12 @@ var int5 = /* @__PURE__ */ new Decoder2(decode_int3);
 
 // build/dev/javascript/childglem/table/table.mjs
 var Reservation = class extends CustomType {
-  constructor(childs) {
+  constructor(childs, total, limit, page) {
     super();
     this.childs = childs;
+    this.total = total;
+    this.limit = limit;
+    this.page = page;
   }
 };
 var Child = class extends CustomType {
@@ -5622,7 +5625,7 @@ function fetch_childs(api_token) {
 function init4(_) {
   let token = unwrap2(fetch2(), "");
   let f = fetch_childs(token);
-  return [new Reservation(toList([])), f];
+  return [new Reservation(toList([]), 0, 10, 1), f];
 }
 function decode_childs() {
   return field5(
@@ -5646,7 +5649,27 @@ function decode_childs() {
       return list_nonempty(_pipe);
     })(),
     (childs) => {
-      return decoded(new Reservation(childs));
+      return field5(
+        "total",
+        int5,
+        (total) => {
+          return field5(
+            "limit",
+            int5,
+            (limit) => {
+              return field5(
+                "page",
+                int5,
+                (page) => {
+                  return decoded(
+                    new Reservation(childs, total, limit, page)
+                  );
+                }
+              );
+            }
+          );
+        }
+      );
     }
   );
 }
@@ -5658,7 +5681,7 @@ function update3(model, msg) {
       throw makeError(
         "let_assert",
         "table/table",
-        50,
+        51,
         "update",
         "Pattern match failed, no pattern matched the value.",
         { value: $ }
@@ -5677,9 +5700,15 @@ function update3(model, msg) {
   }
 }
 function view3(model) {
+  let total = to_string(model.total);
+  let limit = to_string(model.limit);
+  let page = to_string(model.page);
   return div(
     toList([]),
     toList([
+      text("Total: " + total),
+      text("Limit: " + limit),
+      text("Page: " + page),
       ol(
         toList([]),
         map(

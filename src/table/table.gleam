@@ -1,11 +1,12 @@
-import gleam/list
 import auth/jwt
 import env
 import gleam/dynamic
 import gleam/http/request
 import gleam/http/response
+import gleam/int
 import gleam/io
 import gleam/json
+import gleam/list
 import gleam/result
 import gleam/uri
 import lustre
@@ -16,7 +17,7 @@ import rsvp
 import toy
 
 pub type Reservation {
-  Reservation(childs: List(Child))
+  Reservation(childs: List(Child), total: Int, limit: Int, page: Int)
 }
 
 pub type Child {
@@ -41,7 +42,7 @@ pub fn init(_flags) -> #(Reservation, Effect(Msg)) {
 
   let f = fetch_childs(token)
 
-  #(Reservation(childs: []), f)
+  #(Reservation(childs: [], total: 0, limit: 10, page: 1), f)
 }
 
 pub fn update(model: Reservation, msg: Msg) -> #(Reservation, Effect(Msg)) {
@@ -98,13 +99,27 @@ pub fn decode_childs() {
       |> toy.list_nonempty,
   )
 
-  toy.decoded(Reservation(childs:))
+  use total <- toy.field("total", toy.int)
+  use limit <- toy.field("limit", toy.int)
+  use page <- toy.field("page", toy.int)
+
+  toy.decoded(Reservation(childs:, total:, limit:, page:))
 }
 
 pub fn view(model: Reservation) -> Element(Msg) {
+  let total = int.to_string(model.total)
+  let limit = int.to_string(model.limit)
+  let page = int.to_string(model.page)
+
   html.div([], [
-    html.ol([],
-      list.map(model.childs, fn(child) { html.li([], [element.text(child.name)]) })
-    )
+    element.text("Total: " <> total),
+    element.text("Limit: " <> limit),
+    element.text("Page: " <> page),
+    html.ol(
+      [],
+      list.map(model.childs, fn(child) {
+        html.li([], [element.text(child.name)])
+      }),
+    ),
   ])
 }
