@@ -89,8 +89,8 @@ var BitArray = class _BitArray {
     return this.buffer.length;
   }
   // @internal
-  byteAt(index4) {
-    return this.buffer[index4];
+  byteAt(index5) {
+    return this.buffer[index5];
   }
   // @internal
   floatFromSlice(start3, end, isBigEndian) {
@@ -110,11 +110,11 @@ var BitArray = class _BitArray {
     return new _BitArray(buffer);
   }
   // @internal
-  sliceAfter(index4) {
+  sliceAfter(index5) {
     const buffer = new Uint8Array(
       this.buffer.buffer,
-      this.buffer.byteOffset + index4,
-      this.buffer.byteLength - index4
+      this.buffer.byteOffset + index5,
+      this.buffer.byteLength - index5
     );
     return new _BitArray(buffer);
   }
@@ -1017,22 +1017,22 @@ function to_string(term) {
   return term.toString();
 }
 var segmenter = void 0;
-function graphemes_iterator(string4) {
+function graphemes_iterator(string5) {
   if (globalThis.Intl && Intl.Segmenter) {
     segmenter ||= new Intl.Segmenter();
-    return segmenter.segment(string4)[Symbol.iterator]();
+    return segmenter.segment(string5)[Symbol.iterator]();
   }
 }
-function pop_grapheme(string4) {
+function pop_grapheme(string5) {
   let first2;
-  const iterator = graphemes_iterator(string4);
+  const iterator = graphemes_iterator(string5);
   if (iterator) {
     first2 = iterator.next().value?.segment;
   } else {
-    first2 = string4.match(/./su)?.[0];
+    first2 = string5.match(/./su)?.[0];
   }
   if (first2) {
-    return new Ok([first2, string4.slice(first2.length)]);
+    return new Ok([first2, string5.slice(first2.length)]);
   } else {
     return new Error(Nil);
   }
@@ -1040,8 +1040,8 @@ function pop_grapheme(string4) {
 function pop_codeunit(str) {
   return [str.charCodeAt(0) | 0, str.slice(1)];
 }
-function lowercase(string4) {
-  return string4.toLowerCase();
+function lowercase(string5) {
+  return string5.toLowerCase();
 }
 function concat(xs) {
   let result = "";
@@ -1081,18 +1081,18 @@ var trim_end_regex = new RegExp(`[${unicode_whitespaces}]*$`);
 function new_map() {
   return Dict.new();
 }
-function map_to_list(map6) {
-  return List.fromArray(map6.entries());
+function map_to_list(map7) {
+  return List.fromArray(map7.entries());
 }
-function map_get(map6, key2) {
-  const value3 = map6.get(key2, NOT_FOUND);
+function map_get(map7, key2) {
+  const value3 = map7.get(key2, NOT_FOUND);
   if (value3 === NOT_FOUND) {
     return new Error(Nil);
   }
   return new Ok(value3);
 }
-function map_insert(key2, value3, map6) {
-  return map6.set(key2, value3);
+function map_insert(key2, value3, map7) {
+  return map7.set(key2, value3);
 }
 function classify_dynamic(data) {
   if (typeof data === "string") {
@@ -1149,9 +1149,9 @@ function decode_field(value3, name) {
     return try_get_field(value3, name, not_a_map_error);
   }
 }
-function try_get_field(value3, field4, or_else) {
+function try_get_field(value3, field5, or_else) {
   try {
-    return field4 in value3 ? new Ok(new Some(value3[field4])) : or_else();
+    return field5 in value3 ? new Ok(new Some(value3[field5])) : or_else();
   } catch {
     return or_else();
   }
@@ -1230,6 +1230,23 @@ function map_loop(loop$list, loop$fun, loop$acc) {
 function map(list2, fun) {
   return map_loop(list2, fun, toList([]));
 }
+function append_loop(loop$first, loop$second) {
+  while (true) {
+    let first2 = loop$first;
+    let second = loop$second;
+    if (first2.hasLength(0)) {
+      return second;
+    } else {
+      let first$1 = first2.head;
+      let rest$1 = first2.tail;
+      loop$first = rest$1;
+      loop$second = prepend(first$1, second);
+    }
+  }
+}
+function append(first2, second) {
+  return append_loop(reverse(first2), second);
+}
 function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
     let list2 = loop$list;
@@ -1251,21 +1268,56 @@ function index_fold_loop(loop$over, loop$acc, loop$with, loop$index) {
     let over = loop$over;
     let acc = loop$acc;
     let with$ = loop$with;
-    let index4 = loop$index;
+    let index5 = loop$index;
     if (over.hasLength(0)) {
       return acc;
     } else {
       let first$1 = over.head;
       let rest$1 = over.tail;
       loop$over = rest$1;
-      loop$acc = with$(acc, first$1, index4);
+      loop$acc = with$(acc, first$1, index5);
       loop$with = with$;
-      loop$index = index4 + 1;
+      loop$index = index5 + 1;
     }
   }
 }
 function index_fold(list2, initial, fun) {
   return index_fold_loop(list2, initial, fun, 0);
+}
+function find_map(loop$list, loop$fun) {
+  while (true) {
+    let list2 = loop$list;
+    let fun = loop$fun;
+    if (list2.hasLength(0)) {
+      return new Error(void 0);
+    } else {
+      let first$1 = list2.head;
+      let rest$1 = list2.tail;
+      let $ = fun(first$1);
+      if ($.isOk()) {
+        let first$2 = $[0];
+        return new Ok(first$2);
+      } else {
+        loop$list = rest$1;
+        loop$fun = fun;
+      }
+    }
+  }
+}
+function key_find(keyword_list, desired_key) {
+  return find_map(
+    keyword_list,
+    (keyword) => {
+      let key2 = keyword[0];
+      let value3 = keyword[1];
+      let $ = isEqual(key2, desired_key);
+      if ($) {
+        return new Ok(value3);
+      } else {
+        return new Error(void 0);
+      }
+    }
+  );
 }
 function key_set_loop(loop$list, loop$key, loop$value, loop$inspected) {
   while (true) {
@@ -1301,19 +1353,19 @@ function concat2(strings) {
 }
 function drop_start(loop$string, loop$num_graphemes) {
   while (true) {
-    let string4 = loop$string;
+    let string5 = loop$string;
     let num_graphemes = loop$num_graphemes;
     let $ = num_graphemes > 0;
     if (!$) {
-      return string4;
+      return string5;
     } else {
-      let $1 = pop_grapheme(string4);
+      let $1 = pop_grapheme(string5);
       if ($1.isOk()) {
         let string$1 = $1[0][1];
         loop$string = string$1;
         loop$num_graphemes = num_graphemes - 1;
       } else {
-        return string4;
+        return string5;
       }
     }
   }
@@ -1350,11 +1402,20 @@ function try$(result, fun) {
 function then$(result, fun) {
   return try$(result, fun);
 }
-function replace2(result, value3) {
+function unwrap_both(result) {
   if (result.isOk()) {
-    return new Ok(value3);
+    let a = result[0];
+    return a;
   } else {
-    let error = result[0];
+    let a = result[0];
+    return a;
+  }
+}
+function replace_error(result, error) {
+  if (result.isOk()) {
+    let x = result[0];
+    return new Ok(x);
+  } else {
     return new Error(error);
   }
 }
@@ -1445,25 +1506,243 @@ function field(name, inner_type) {
     );
   };
 }
-function all_errors(result) {
-  if (result.isOk()) {
-    return toList([]);
+
+// build/dev/javascript/gleam_stdlib/gleam_stdlib_decode_ffi.mjs
+function index2(data, key2) {
+  const int4 = Number.isInteger(key2);
+  if (data instanceof Dict || data instanceof WeakMap || data instanceof Map) {
+    const token = {};
+    const entry = data.get(key2, token);
+    if (entry === token)
+      return new Ok(new None());
+    return new Ok(new Some(entry));
+  }
+  if ((key2 === 0 || key2 === 1 || key2 === 2) && data instanceof List) {
+    let i = 0;
+    for (const value3 of data) {
+      if (i === key2)
+        return new Ok(new Some(value3));
+      i++;
+    }
+    return new Error("Indexable");
+  }
+  if (int4 && Array.isArray(data) || data && typeof data === "object" || data && Object.getPrototypeOf(data) === Object.prototype) {
+    if (key2 in data)
+      return new Ok(new Some(data[key2]));
+    return new Ok(new None());
+  }
+  return new Error(int4 ? "Indexable" : "Dict");
+}
+function int(data) {
+  if (Number.isInteger(data))
+    return new Ok(data);
+  return new Error(0);
+}
+function string2(data) {
+  if (typeof data === "string")
+    return new Ok(data);
+  return new Error(0);
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/dynamic/decode.mjs
+var DecodeError2 = class extends CustomType {
+  constructor(expected, found, path) {
+    super();
+    this.expected = expected;
+    this.found = found;
+    this.path = path;
+  }
+};
+var Decoder = class extends CustomType {
+  constructor(function$) {
+    super();
+    this.function = function$;
+  }
+};
+function run(data, decoder) {
+  let $ = decoder.function(data);
+  let maybe_invalid_data = $[0];
+  let errors = $[1];
+  if (errors.hasLength(0)) {
+    return new Ok(maybe_invalid_data);
   } else {
-    let errors = result[0];
-    return errors;
+    return new Error(errors);
   }
 }
-function decode1(constructor, t1) {
-  return (value3) => {
-    let $ = t1(value3);
-    if ($.isOk()) {
-      let a = $[0];
-      return new Ok(constructor(a));
-    } else {
-      let a = $;
-      return new Error(all_errors(a));
+function success(data) {
+  return new Decoder((_) => {
+    return [data, toList([])];
+  });
+}
+function map3(decoder, transformer) {
+  return new Decoder(
+    (d) => {
+      let $ = decoder.function(d);
+      let data = $[0];
+      let errors = $[1];
+      return [transformer(data), errors];
     }
-  };
+  );
+}
+function run_decoders(loop$data, loop$failure, loop$decoders) {
+  while (true) {
+    let data = loop$data;
+    let failure = loop$failure;
+    let decoders = loop$decoders;
+    if (decoders.hasLength(0)) {
+      return failure;
+    } else {
+      let decoder = decoders.head;
+      let decoders$1 = decoders.tail;
+      let $ = decoder.function(data);
+      let layer = $;
+      let errors = $[1];
+      if (errors.hasLength(0)) {
+        return layer;
+      } else {
+        loop$data = data;
+        loop$failure = failure;
+        loop$decoders = decoders$1;
+      }
+    }
+  }
+}
+function one_of(first2, alternatives) {
+  return new Decoder(
+    (dynamic_data) => {
+      let $ = first2.function(dynamic_data);
+      let layer = $;
+      let errors = $[1];
+      if (errors.hasLength(0)) {
+        return layer;
+      } else {
+        return run_decoders(dynamic_data, layer, alternatives);
+      }
+    }
+  );
+}
+function run_dynamic_function(data, name, f) {
+  let $ = f(data);
+  if ($.isOk()) {
+    let data$1 = $[0];
+    return [data$1, toList([])];
+  } else {
+    let zero = $[0];
+    return [
+      zero,
+      toList([new DecodeError2(name, classify_dynamic(data), toList([]))])
+    ];
+  }
+}
+function decode_int2(data) {
+  return run_dynamic_function(data, "Int", int);
+}
+var int2 = /* @__PURE__ */ new Decoder(decode_int2);
+function decode_string2(data) {
+  return run_dynamic_function(data, "String", string2);
+}
+var string3 = /* @__PURE__ */ new Decoder(decode_string2);
+function push_path2(layer, path) {
+  let decoder = one_of(
+    string3,
+    toList([
+      (() => {
+        let _pipe = int2;
+        return map3(_pipe, to_string);
+      })()
+    ])
+  );
+  let path$1 = map(
+    path,
+    (key2) => {
+      let key$1 = identity(key2);
+      let $ = run(key$1, decoder);
+      if ($.isOk()) {
+        let key$2 = $[0];
+        return key$2;
+      } else {
+        return "<" + classify_dynamic(key$1) + ">";
+      }
+    }
+  );
+  let errors = map(
+    layer[1],
+    (error) => {
+      let _record = error;
+      return new DecodeError2(
+        _record.expected,
+        _record.found,
+        append(path$1, error.path)
+      );
+    }
+  );
+  return [layer[0], errors];
+}
+function index3(loop$path, loop$position, loop$inner, loop$data, loop$handle_miss) {
+  while (true) {
+    let path = loop$path;
+    let position = loop$position;
+    let inner = loop$inner;
+    let data = loop$data;
+    let handle_miss = loop$handle_miss;
+    if (path.hasLength(0)) {
+      let _pipe = inner(data);
+      return push_path2(_pipe, reverse(position));
+    } else {
+      let key2 = path.head;
+      let path$1 = path.tail;
+      let $ = index2(data, key2);
+      if ($.isOk() && $[0] instanceof Some) {
+        let data$1 = $[0][0];
+        loop$path = path$1;
+        loop$position = prepend(key2, position);
+        loop$inner = inner;
+        loop$data = data$1;
+        loop$handle_miss = handle_miss;
+      } else if ($.isOk() && $[0] instanceof None) {
+        return handle_miss(data, prepend(key2, position));
+      } else {
+        let kind = $[0];
+        let $1 = inner(data);
+        let default$ = $1[0];
+        let _pipe = [
+          default$,
+          toList([new DecodeError2(kind, classify_dynamic(data), toList([]))])
+        ];
+        return push_path2(_pipe, reverse(position));
+      }
+    }
+  }
+}
+function subfield(field_path, field_decoder, next) {
+  return new Decoder(
+    (data) => {
+      let $ = index3(
+        field_path,
+        toList([]),
+        field_decoder.function,
+        data,
+        (data2, position) => {
+          let $12 = field_decoder.function(data2);
+          let default$ = $12[0];
+          let _pipe = [
+            default$,
+            toList([new DecodeError2("Field", "Nothing", toList([]))])
+          ];
+          return push_path2(_pipe, reverse(position));
+        }
+      );
+      let out = $[0];
+      let errors1 = $[1];
+      let $1 = next(out).function(data);
+      let out$1 = $1[0];
+      let errors2 = $1[1];
+      return [out$1, append(errors1, errors2)];
+    }
+  );
+}
+function field2(field_name, field_decoder, next) {
+  return subfield(toList([field_name]), field_decoder, next);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/bool.mjs
@@ -1485,12 +1764,12 @@ function object(entries) {
 function identity2(x) {
   return x;
 }
-function decode(string4) {
+function decode(string5) {
   try {
-    const result = JSON.parse(string4);
+    const result = JSON.parse(string5);
     return new Ok(result);
   } catch (err) {
-    return new Error(getJsonDecodeError(err, string4));
+    return new Error(getJsonDecodeError(err, string5));
   }
 }
 function getJsonDecodeError(stdErr, json) {
@@ -1555,12 +1834,12 @@ function jsCoreUnexpectedByteError(err) {
 function toHex(char) {
   return "0x" + char.charCodeAt(0).toString(16).toUpperCase();
 }
-function getPositionFromMultiline(line, column, string4) {
+function getPositionFromMultiline(line, column, string5) {
   if (line === 1)
     return column - 1;
   let currentLn = 1;
   let position = 0;
-  string4.split("").find((char, idx) => {
+  string5.split("").find((char, idx) => {
     if (char === "\n")
       currentLn += 1;
     if (currentLn === line) {
@@ -1581,33 +1860,33 @@ var UnexpectedByte = class extends CustomType {
     this[0] = x0;
   }
 };
-var UnexpectedFormat = class extends CustomType {
+var UnableToDecode = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
   }
 };
-function do_decode(json, decoder) {
+function do_parse(json, decoder) {
   return then$(
     decode(json),
     (dynamic_value) => {
-      let _pipe = decoder(dynamic_value);
+      let _pipe = run(dynamic_value, decoder);
       return map_error(
         _pipe,
         (var0) => {
-          return new UnexpectedFormat(var0);
+          return new UnableToDecode(var0);
         }
       );
     }
   );
 }
-function decode2(json, decoder) {
-  return do_decode(json, decoder);
+function parse(json, decoder) {
+  return do_parse(json, decoder);
 }
 function to_string2(json) {
   return json_to_string(json);
 }
-function string3(input4) {
+function string4(input4) {
   return identity2(input4);
 }
 function object2(entries) {
@@ -1693,8 +1972,8 @@ function do_element_list_handlers(elements2, handlers2, key2) {
   return index_fold(
     elements2,
     handlers2,
-    (handlers3, element2, index4) => {
-      let key$1 = key2 + "-" + to_string(index4);
+    (handlers3, element2, index5) => {
+      let key$1 = key2 + "-" + to_string(index5);
       return do_handlers(element2, handlers3, key$1);
     }
   );
@@ -2534,9 +2813,9 @@ var make_lustre_client_component = ({ init: init5, update: update4, view: view4,
         if (link.sheet)
           continue;
         pendingParentStylesheets.push(
-          new Promise((resolve2, reject) => {
+          new Promise((resolve2, reject2) => {
             link.addEventListener("load", resolve2);
-            link.addEventListener("error", reject);
+            link.addEventListener("error", reject2);
           })
         );
       }
@@ -2565,9 +2844,9 @@ var make_lustre_client_component = ({ init: init5, update: update4, view: view4,
             this.shadowRoot.prepend(node);
             this.#adoptedStyleElements.push(node);
             pending.push(
-              new Promise((resolve2, reject) => {
+              new Promise((resolve2, reject2) => {
                 node.onload = resolve2;
-                node.onerror = reject;
+                node.onerror = reject2;
               })
             );
           }
@@ -2842,7 +3121,7 @@ function of4(element2, attributes, label2, input4, message) {
     ])
   );
 }
-function field2(attributes, label2, input4, message) {
+function field3(attributes, label2, input4, message) {
   return of4(label, attributes, label2, input4, message);
 }
 
@@ -2857,7 +3136,7 @@ function input2(attributes) {
 var aside2 = aside;
 var button3 = button2;
 var centre2 = centre;
-var field3 = field2;
+var field4 = field3;
 var input3 = input2;
 
 // build/dev/javascript/gleam_stdlib/gleam/uri.mjs
@@ -3471,8 +3750,8 @@ function parse_userinfo_loop(loop$original, loop$uri_string, loop$pieces, loop$s
     }
   }
 }
-function parse_authority_pieces(string4, pieces) {
-  return parse_userinfo_loop(string4, string4, pieces, 0);
+function parse_authority_pieces(string5, pieces) {
+  return parse_userinfo_loop(string5, string5, pieces, 0);
 }
 function parse_authority_with_slashes(uri_string, pieces) {
   if (uri_string === "//") {
@@ -3601,7 +3880,7 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
     }
   }
 }
-function parse(uri_string) {
+function parse2(uri_string) {
   let default_pieces = new Uri(
     new None(),
     new None(),
@@ -3845,11 +4124,6 @@ function set_method(req, method) {
     _record.query
   );
 }
-function to(url) {
-  let _pipe = url;
-  let _pipe$1 = parse(_pipe);
-  return then$(_pipe$1, from_uri);
-}
 
 // build/dev/javascript/gleam_http/gleam/http/response.mjs
 var Response = class extends CustomType {
@@ -3860,6 +4134,9 @@ var Response = class extends CustomType {
     this.body = body;
   }
 };
+function get_header(response, key2) {
+  return key_find(response.headers, lowercase(key2));
+}
 
 // build/dev/javascript/gleam_javascript/gleam_javascript_ffi.mjs
 var PromiseLayer = class _PromiseLayer {
@@ -3883,9 +4160,6 @@ function map_promise(promise, fn) {
   return promise.then(
     (value3) => PromiseLayer.wrap(fn(PromiseLayer.unwrap(value3)))
   );
-}
-function rescue(promise, fn) {
-  return promise.catch((error) => fn(error));
 }
 
 // build/dev/javascript/gleam_javascript/gleam/javascript/promise.mjs
@@ -3915,7 +4189,7 @@ function try_await(promise, callback) {
   );
 }
 
-// build/dev/javascript/gleam_fetch/ffi.mjs
+// build/dev/javascript/gleam_fetch/gleam_fetch_ffi.mjs
 async function raw_send(request) {
   try {
     return new Ok(await fetch(request));
@@ -3930,14 +4204,18 @@ function from_fetch_response(response) {
     response
   );
 }
-function to_fetch_request(request) {
+function request_common(request) {
   let url = to_string3(to_uri(request));
   let method = method_to_string(request.method).toUpperCase();
   let options = {
     headers: make_headers(request.headers),
     method
   };
-  if (method !== "GET" && method !== "HEAD")
+  return [url, options];
+}
+function to_fetch_request(request) {
+  let [url, options] = request_common(request);
+  if (options.method !== "GET" && options.method !== "HEAD")
     options.body = request.body;
   return new globalThis.Request(url, options);
 }
@@ -3978,14 +4256,44 @@ function send(request) {
   );
 }
 
-// build/dev/javascript/lustre_http/lustre_http.mjs
+// build/dev/javascript/rsvp/rsvp.ffi.mjs
+var from_relative_url = (url_string) => {
+  if (!globalThis.location)
+    return new Error(void 0);
+  const url = new URL(url_string, globalThis.location.href);
+  const uri = uri_from_url(url);
+  return new Ok(uri);
+};
+var uri_from_url = (url) => {
+  const optional = (value3) => value3 ? new Some(value3) : new None();
+  return new Uri(
+    /* scheme   */
+    optional(url.protocol?.slice(0, -1)),
+    /* userinfo */
+    new None(),
+    /* host     */
+    optional(url.hostname),
+    /* port     */
+    optional(url.port && Number(url.port)),
+    /* path     */
+    url.pathname,
+    /* query    */
+    optional(url.search?.slice(1)),
+    /* fragment */
+    optional(url.hash?.slice(1))
+  );
+};
+
+// build/dev/javascript/rsvp/rsvp.mjs
+var BadBody = class extends CustomType {
+};
 var BadUrl = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
   }
 };
-var InternalServerError = class extends CustomType {
+var HttpError = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
@@ -3999,116 +4307,165 @@ var JsonError = class extends CustomType {
 };
 var NetworkError2 = class extends CustomType {
 };
-var NotFound = class extends CustomType {
-};
-var OtherError = class extends CustomType {
-  constructor(x0, x1) {
+var UnhandledResponse = class extends CustomType {
+  constructor(x0) {
     super();
     this[0] = x0;
-    this[1] = x1;
   }
 };
-var Unauthorized = class extends CustomType {
-};
-var ExpectTextResponse = class extends CustomType {
+var Handler = class extends CustomType {
   constructor(run2) {
     super();
     this.run = run2;
   }
 };
-function do_send(req, expect, dispatch) {
-  let _pipe = send(req);
-  let _pipe$1 = try_await(_pipe, read_text_body);
-  let _pipe$2 = map_promise(
-    _pipe$1,
-    (response) => {
-      if (response.isOk()) {
-        let res = response[0];
-        return expect.run(new Ok(res));
-      } else {
-        return expect.run(new Error(new NetworkError2()));
-      }
+function expect_ok_response(handler) {
+  return new Handler(
+    (result) => {
+      return handler(
+        try$(
+          result,
+          (response) => {
+            let $ = response.status;
+            if ($ >= 200 && $ < 300) {
+              let code = $;
+              return new Ok(response);
+            } else if ($ >= 400 && $ < 600) {
+              let code = $;
+              return new Error(new HttpError(response));
+            } else {
+              return new Error(new UnhandledResponse(response));
+            }
+          }
+        )
+      );
     }
   );
-  let _pipe$3 = rescue(
-    _pipe$2,
-    (_) => {
-      return expect.run(new Error(new NetworkError2()));
-    }
-  );
-  tap(_pipe$3, dispatch);
-  return void 0;
 }
-function post(url, body, expect) {
+function expect_json_response(handler) {
+  return expect_ok_response(
+    (result) => {
+      return handler(
+        try$(
+          result,
+          (response) => {
+            let $ = get_header(response, "content-type");
+            if ($.isOk() && $[0] === "application/json") {
+              return new Ok(response);
+            } else if ($.isOk() && $[0].startsWith("application/json;")) {
+              return new Ok(response);
+            } else {
+              return new Error(new UnhandledResponse(response));
+            }
+          }
+        )
+      );
+    }
+  );
+}
+function do_send(request, handler) {
   return from(
     (dispatch) => {
-      let $ = to(url);
-      if ($.isOk()) {
-        let req = $[0];
-        let _pipe = req;
-        let _pipe$1 = set_method(_pipe, new Post());
-        let _pipe$2 = set_header(
-          _pipe$1,
-          "Content-Type",
-          "application/json"
-        );
-        let _pipe$3 = set_body(_pipe$2, to_string2(body));
-        return do_send(_pipe$3, expect, dispatch);
-      } else {
-        return dispatch(expect.run(new Error(new BadUrl(url))));
-      }
-    }
-  );
-}
-function response_to_result(response) {
-  if (response instanceof Response && (200 <= response.status && response.status <= 299)) {
-    let status = response.status;
-    let body = response.body;
-    return new Ok(body);
-  } else if (response instanceof Response && response.status === 401) {
-    return new Error(new Unauthorized());
-  } else if (response instanceof Response && response.status === 404) {
-    return new Error(new NotFound());
-  } else if (response instanceof Response && response.status === 500) {
-    let body = response.body;
-    return new Error(new InternalServerError(body));
-  } else {
-    let code = response.status;
-    let body = response.body;
-    return new Error(new OtherError(code, body));
-  }
-}
-function expect_anything(to_msg) {
-  return new ExpectTextResponse(
-    (response) => {
-      let _pipe = response;
-      let _pipe$1 = then$(_pipe, response_to_result);
-      let _pipe$2 = replace2(_pipe$1, void 0);
-      return to_msg(_pipe$2);
-    }
-  );
-}
-function expect_json(decoder, to_msg) {
-  return new ExpectTextResponse(
-    (response) => {
-      let _pipe = response;
-      let _pipe$1 = then$(_pipe, response_to_result);
-      let _pipe$2 = then$(
+      let _pipe = send(request);
+      let _pipe$1 = try_await(_pipe, read_text_body);
+      let _pipe$2 = map_promise(
         _pipe$1,
-        (body) => {
-          let $ = decode2(body, decoder);
-          if ($.isOk()) {
-            let json = $[0];
-            return new Ok(json);
-          } else {
-            let json_error = $[0];
-            return new Error(new JsonError(json_error));
-          }
+        (_capture) => {
+          return map_error(
+            _capture,
+            (error) => {
+              if (error instanceof NetworkError) {
+                return new NetworkError2();
+              } else if (error instanceof UnableToReadBody) {
+                return new BadBody();
+              } else {
+                return new BadBody();
+              }
+            }
+          );
         }
       );
-      return to_msg(_pipe$2);
+      let _pipe$3 = map_promise(_pipe$2, handler.run);
+      tap(_pipe$3, dispatch);
+      return void 0;
     }
   );
+}
+function send2(request, handler) {
+  return do_send(request, handler);
+}
+function reject(err, handler) {
+  return from(
+    (dispatch) => {
+      let _pipe = new Error(err);
+      let _pipe$1 = handler.run(_pipe);
+      return dispatch(_pipe$1);
+    }
+  );
+}
+function decode_json_body(response, decoder) {
+  let _pipe = response.body;
+  let _pipe$1 = parse(_pipe, decoder);
+  return map_error(_pipe$1, (var0) => {
+    return new JsonError(var0);
+  });
+}
+function expect_json(decoder, handler) {
+  return expect_json_response(
+    (result) => {
+      let _pipe = result;
+      let _pipe$1 = then$(
+        _pipe,
+        (_capture) => {
+          return decode_json_body(_capture, decoder);
+        }
+      );
+      return handler(_pipe$1);
+    }
+  );
+}
+function to_uri2(uri_string) {
+  let _pipe = (() => {
+    if (uri_string.startsWith("./")) {
+      return from_relative_url(uri_string);
+    } else if (uri_string.startsWith("/")) {
+      return from_relative_url(uri_string);
+    } else {
+      return parse2(uri_string);
+    }
+  })();
+  return replace_error(_pipe, new BadUrl(uri_string));
+}
+function post(url, body, handler) {
+  let $ = to_uri2(url);
+  if ($.isOk()) {
+    let uri = $[0];
+    let _pipe = from_uri(uri);
+    let _pipe$1 = map2(
+      _pipe,
+      (request) => {
+        let _pipe$12 = request;
+        let _pipe$22 = set_method(_pipe$12, new Post());
+        let _pipe$3 = set_header(
+          _pipe$22,
+          "content-type",
+          "application/json"
+        );
+        let _pipe$4 = set_body(_pipe$3, to_string2(body));
+        return send2(_pipe$4, handler);
+      }
+    );
+    let _pipe$2 = map_error(
+      _pipe$1,
+      (_) => {
+        return reject(new BadUrl(url), handler);
+      }
+    );
+    return unwrap_both(_pipe$2);
+  } else {
+    let err = $[0];
+    return reject(err, handler);
+  }
 }
 
 // build/dev/javascript/plinth/storage_ffi.mjs
@@ -4132,23 +4489,27 @@ function setItem(storage, keyName, keyValue) {
   }
 }
 
+// build/dev/javascript/childglem/auth/jwt.mjs
+function save(token, storage_key) {
+  return try$(
+    localStorage(),
+    (local_storage) => {
+      return setItem(local_storage, storage_key, token);
+    }
+  );
+}
+
 // build/dev/javascript/childglem/env.mjs
 var post_signup = "http://localhost:8080/api/v1/signup";
 var post_signin = "http://localhost:8080/api/v1/signin";
 
 // build/dev/javascript/childglem/auth/signin.mjs
 var Auth = class extends CustomType {
-  constructor(email, password, result) {
+  constructor(email, password, response) {
     super();
     this.email = email;
     this.password = password;
-    this.result = result;
-  }
-};
-var AuthResult = class extends CustomType {
-  constructor(signup) {
-    super();
-    this.signup = signup;
+    this.response = response;
   }
 };
 var Init2 = class extends CustomType {
@@ -4167,7 +4528,7 @@ var PasswordUpdateInput = class extends CustomType {
 };
 var SendAuth = class extends CustomType {
 };
-var GotResponseAuth = class extends CustomType {
+var ApiAuthPost = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
@@ -4180,119 +4541,31 @@ var SigninResponse = class extends CustomType {
   }
 };
 function init2(_) {
-  return [new Auth("", "", new AuthResult(new None())), none()];
+  return [new Auth("", "", new None()), none()];
 }
-function save_jwt_token(token) {
-  return try$(
-    localStorage(),
-    (local_storage) => {
-      return setItem(local_storage, "jwt_token", token);
+function decode_auth() {
+  return field2(
+    "jwt_token",
+    string3,
+    (token) => {
+      return success(new SigninResponse(token));
     }
   );
 }
-function send_auth(email, password) {
-  let payload = object2(
+function authorization(email, password) {
+  let body = object2(
     toList([
-      ["email", string3(email)],
-      ["password", string3(password)]
+      ["email", string4(email)],
+      ["password", string4(password)]
     ])
   );
-  let decoder = decode1(
+  let handler = expect_json(
+    decode_auth(),
     (var0) => {
-      return new SigninResponse(var0);
-    },
-    field("jwt_token", string)
-  );
-  return post(
-    post_signin,
-    payload,
-    expect_json(
-      decoder,
-      (var0) => {
-        return new GotResponseAuth(var0);
-      }
-    )
-  );
-}
-function update(model, msg) {
-  if (msg instanceof Init2) {
-    return [model, none()];
-  } else if (msg instanceof EmailUpdateInput) {
-    let email = msg.value;
-    return [
-      (() => {
-        let _record = model;
-        return new Auth(email, _record.password, _record.result);
-      })(),
-      none()
-    ];
-  } else if (msg instanceof PasswordUpdateInput) {
-    let password = msg.value;
-    return [
-      (() => {
-        let _record = model;
-        return new Auth(_record.email, password, _record.result);
-      })(),
-      none()
-    ];
-  } else if (msg instanceof SendAuth) {
-    let email = model.email;
-    let password = model.password;
-    return [model, send_auth(email, password)];
-  } else if (msg instanceof GotResponseAuth && msg[0].isOk()) {
-    let resp = msg[0][0];
-    let $ = save_jwt_token(resp.jwt_token);
-    return [
-      (() => {
-        let _record = model;
-        return new Auth(
-          _record.email,
-          _record.password,
-          new AuthResult(new Some("success authorization"))
-        );
-      })(),
-      none()
-    ];
-  } else {
-    let http_error = msg[0][0];
-    if (http_error instanceof InternalServerError) {
-      return [
-        (() => {
-          let _record = model;
-          return new Auth(
-            _record.email,
-            _record.password,
-            new AuthResult(new Some("internal server error"))
-          );
-        })(),
-        none()
-      ];
-    } else if (http_error instanceof NotFound) {
-      return [
-        (() => {
-          let _record = model;
-          return new Auth(
-            _record.email,
-            _record.password,
-            new AuthResult(new Some("user not found"))
-          );
-        })(),
-        none()
-      ];
-    } else {
-      return [
-        (() => {
-          let _record = model;
-          return new Auth(
-            _record.email,
-            _record.password,
-            new AuthResult(new Some("failed authorization"))
-          );
-        })(),
-        none()
-      ];
+      return new ApiAuthPost(var0);
     }
-  }
+  );
+  return post(post_signin, body, handler);
 }
 function view(model) {
   return div(
@@ -4313,12 +4586,12 @@ function view(model) {
                 toList([]),
                 toList([
                   (() => {
-                    let $ = model.result.signup;
+                    let $ = model.response;
                     if ($ instanceof Some) {
-                      let text2 = $[0];
+                      let result = $[0];
                       return div(
                         toList([]),
-                        toList([text(text2)])
+                        toList([text(result)])
                       );
                     } else {
                       return div(toList([]), toList([text("")]));
@@ -4345,7 +4618,7 @@ function view(model) {
                 toList([
                   aside2(
                     toList([]),
-                    field3(
+                    field4(
                       toList([]),
                       toList([text("Write Email: ")]),
                       input3(
@@ -4360,7 +4633,7 @@ function view(model) {
                       ),
                       toList([])
                     ),
-                    field3(
+                    field4(
                       toList([]),
                       toList([text("Write password: ")]),
                       input3(
@@ -4390,23 +4663,72 @@ function view(model) {
     ])
   );
 }
+var http_200 = "success authorization";
+var http_fail = "failed authorization";
+function update(model, msg) {
+  if (msg instanceof Init2) {
+    return [model, none()];
+  } else if (msg instanceof EmailUpdateInput) {
+    let email = msg.value;
+    return [
+      (() => {
+        let _record = model;
+        return new Auth(email, _record.password, _record.response);
+      })(),
+      none()
+    ];
+  } else if (msg instanceof PasswordUpdateInput) {
+    let password = msg.value;
+    return [
+      (() => {
+        let _record = model;
+        return new Auth(_record.email, password, _record.response);
+      })(),
+      none()
+    ];
+  } else if (msg instanceof SendAuth) {
+    return [model, authorization(model.email, model.password)];
+  } else if (msg instanceof ApiAuthPost && msg[0].isOk()) {
+    let r = msg[0][0];
+    let $ = save(r.jwt_token, "j.t");
+    if ($.isOk()) {
+      return [
+        (() => {
+          let _record = model;
+          return new Auth(_record.email, _record.password, new Some(http_200));
+        })(),
+        none()
+      ];
+    } else {
+      return [
+        (() => {
+          let _record = model;
+          return new Auth(_record.email, _record.password, new Some(http_fail));
+        })(),
+        none()
+      ];
+    }
+  } else {
+    return [
+      (() => {
+        let _record = model;
+        return new Auth(_record.email, _record.password, new Some(http_fail));
+      })(),
+      none()
+    ];
+  }
+}
 function app() {
   return application(init2, update, view);
 }
 
 // build/dev/javascript/childglem/auth/signup.mjs
 var Auth2 = class extends CustomType {
-  constructor(email, password, result) {
+  constructor(email, password, response) {
     super();
     this.email = email;
     this.password = password;
-    this.result = result;
-  }
-};
-var AuthResult2 = class extends CustomType {
-  constructor(signup) {
-    super();
-    this.signup = signup;
+    this.response = response;
   }
 };
 var Init3 = class extends CustomType {
@@ -4423,111 +4745,30 @@ var PasswordUpdateInput2 = class extends CustomType {
     this.value = value3;
   }
 };
-var SendAuth2 = class extends CustomType {
+var CreateUser = class extends CustomType {
 };
-var GotResponseAuth2 = class extends CustomType {
+var ApiAuthPost2 = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
   }
 };
 function init3(_) {
-  return [new Auth2("", "", new AuthResult2(new None())), none()];
+  return [new Auth2("", "", new None()), none()];
 }
-function send_auth2(email, password) {
-  let payload = object2(
+function create_user(email, password) {
+  let body = object2(
     toList([
-      ["email", string3(email)],
-      ["password", string3(password)]
+      ["email", string4(email)],
+      ["password", string4(password)]
     ])
   );
-  return post(
-    post_signup,
-    payload,
-    expect_anything(
-      (var0) => {
-        return new GotResponseAuth2(var0);
-      }
-    )
-  );
-}
-function update2(model, msg) {
-  if (msg instanceof Init3) {
-    return [model, none()];
-  } else if (msg instanceof EmailUpdateInput2) {
-    let email = msg.value;
-    return [
-      (() => {
-        let _record = model;
-        return new Auth2(email, _record.password, _record.result);
-      })(),
-      none()
-    ];
-  } else if (msg instanceof PasswordUpdateInput2) {
-    let password = msg.value;
-    return [
-      (() => {
-        let _record = model;
-        return new Auth2(_record.email, password, _record.result);
-      })(),
-      none()
-    ];
-  } else if (msg instanceof SendAuth2) {
-    let email = model.email;
-    let password = model.password;
-    return [model, send_auth2(email, password)];
-  } else if (msg instanceof GotResponseAuth2 && msg[0].isOk()) {
-    return [
-      (() => {
-        let _record = model;
-        return new Auth2(
-          _record.email,
-          _record.password,
-          new AuthResult2(new Some("success authentication"))
-        );
-      })(),
-      none()
-    ];
-  } else {
-    let http_error = msg[0][0];
-    if (http_error instanceof OtherError) {
-      return [
-        (() => {
-          let _record = model;
-          return new Auth2(
-            _record.email,
-            _record.password,
-            new AuthResult2(new Some("user already exist"))
-          );
-        })(),
-        none()
-      ];
-    } else if (http_error instanceof InternalServerError) {
-      return [
-        (() => {
-          let _record = model;
-          return new Auth2(
-            _record.email,
-            _record.password,
-            new AuthResult2(new Some("internal server error"))
-          );
-        })(),
-        none()
-      ];
-    } else {
-      return [
-        (() => {
-          let _record = model;
-          return new Auth2(
-            _record.email,
-            _record.password,
-            new AuthResult2(new Some("failed authentication"))
-          );
-        })(),
-        none()
-      ];
+  let handler = expect_ok_response(
+    (var0) => {
+      return new ApiAuthPost2(var0);
     }
-  }
+  );
+  return post(post_signup, body, handler);
 }
 function view2(model) {
   return div(
@@ -4548,7 +4789,7 @@ function view2(model) {
                 toList([]),
                 toList([
                   (() => {
-                    let $ = model.result.signup;
+                    let $ = model.response;
                     if ($ instanceof Some) {
                       let text2 = $[0];
                       return div(
@@ -4580,7 +4821,7 @@ function view2(model) {
                 toList([
                   aside2(
                     toList([]),
-                    field3(
+                    field4(
                       toList([]),
                       toList([text("Write Email: ")]),
                       input3(
@@ -4595,7 +4836,7 @@ function view2(model) {
                       ),
                       toList([])
                     ),
-                    field3(
+                    field4(
                       toList([]),
                       toList([text("Write password: ")]),
                       input3(
@@ -4615,7 +4856,7 @@ function view2(model) {
                 ])
               ),
               button3(
-                toList([on_click(new SendAuth2())]),
+                toList([on_click(new CreateUser())]),
                 toList([text("Send")])
               )
             )
@@ -4624,6 +4865,49 @@ function view2(model) {
       )
     ])
   );
+}
+var http_2002 = "success authentication";
+var http_fail2 = "failed authentication";
+function update2(model, msg) {
+  if (msg instanceof Init3) {
+    return [model, none()];
+  } else if (msg instanceof EmailUpdateInput2) {
+    let email = msg.value;
+    return [
+      (() => {
+        let _record = model;
+        return new Auth2(email, _record.password, _record.response);
+      })(),
+      none()
+    ];
+  } else if (msg instanceof PasswordUpdateInput2) {
+    let password = msg.value;
+    return [
+      (() => {
+        let _record = model;
+        return new Auth2(_record.email, password, _record.response);
+      })(),
+      none()
+    ];
+  } else if (msg instanceof CreateUser) {
+    return [model, create_user(model.email, model.password)];
+  } else if (msg instanceof ApiAuthPost2 && msg[0].isOk()) {
+    return [
+      (() => {
+        let _record = model;
+        return new Auth2(_record.email, _record.password, new Some(http_2002));
+      })(),
+      none()
+    ];
+  } else {
+    return [
+      (() => {
+        let _record = model;
+        return new Auth2(_record.email, _record.password, new Some(http_fail2));
+      })(),
+      none()
+    ];
+  }
 }
 function app2() {
   return application(init3, update2, view2);

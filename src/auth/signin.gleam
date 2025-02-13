@@ -1,9 +1,8 @@
+import auth/jwt
 import env
-import gleam/dynamic
-import gleam/io
+import gleam/dynamic/decode
 import gleam/json
 import gleam/option.{type Option, None, Some}
-import gleam/result
 import lustre
 import lustre/attribute
 import lustre/effect.{type Effect}
@@ -11,15 +10,14 @@ import lustre/element.{type Element, element}
 import lustre/element/html
 import lustre/event
 import lustre/ui
-import lustre_http
-import plinth/javascript/storage
+import rsvp
+
+const http_200 = "success authorization"
+
+const http_fail = "failed authorization"
 
 pub type Auth {
-  Auth(email: String, password: String, result: AuthResult)
-}
-
-pub type AuthResult {
-  AuthResult(signup: Option(String))
+  Auth(email: String, password: String, response: Option(String))
 }
 
 pub type Msg {
@@ -28,7 +26,7 @@ pub type Msg {
   PasswordUpdateInput(value: String)
 
   SendAuth
-  GotResponseAuth(Result(SigninResponse, lustre_http.HttpError))
+  ApiAuthPost(Result(SigninResponse, rsvp.Error))
 }
 
 pub type SigninResponse {
@@ -45,78 +43,57 @@ pub fn app() {
 }
 
 pub fn init(_flags) -> #(Auth, Effect(Msg)) {
-  #(Auth(AuthResult(signup: None), email: "", password: ""), effect.none())
+  #(Auth(email: "", password: "", response: None), effect.none())
 }
 
 pub fn update(model: Auth, msg: Msg) -> #(Auth, Effect(Msg)) {
   case msg {
-    Init -> #(model, effect.none())
-    EmailUpdateInput(email) -> #(Auth(..model, email: email), effect.none())
-    PasswordUpdateInput(password) -> #(
-      Auth(..model, password: password),
-      effect.none(),
-    )
+    Init -> {
+      #(model, effect.none())
+    }
+
+    EmailUpdateInput(email) -> {
+      #(Auth(..model, email: email), effect.none())
+    }
+
+    PasswordUpdateInput(password) -> {
+      #(Auth(..model, password: password), effect.none())
+    }
 
     SendAuth -> {
-      let email = model.email
-      let password = model.password
-
-      #(model, send_auth(email, password))
+      #(model, authorization(model.email, model.password))
     }
 
-    GotResponseAuth(Ok(resp)) -> {
-      let _ = save_jwt_token(resp.jwt_token)
-
-      #(
-        Auth(..model, result: AuthResult(signup: Some("success authorization"))),
-        effect.none(),
-      )
-    }
-    GotResponseAuth(Error(http_error)) -> {
-      case http_error {
-        lustre_http.InternalServerError(_) -> #(
-          Auth(
-            ..model,
-            result: AuthResult(signup: Some("internal server error")),
-          ),
-          effect.none(),
-        )
-        lustre_http.NotFound -> #(
-          Auth(..model, result: AuthResult(signup: Some("user not found"))),
-          effect.none(),
-        )
-        _ -> #(
-          Auth(
-            ..model,
-            result: AuthResult(signup: Some("failed authorization")),
-          ),
-          effect.none(),
-        )
+    ApiAuthPost(Ok(r)) -> {
+      case jwt.save(r.jwt_token, "j.t") {
+        Ok(_) -> {
+          #(Auth(..model, response: Some(http_200)), effect.none())
+        }
+        Error(_) -> {
+          #(Auth(..model, response: Some(http_fail)), effect.none())
+        }
       }
+    }
+    ApiAuthPost(Error(_)) -> {
+      #(Auth(..model, response: Some(http_fail)), effect.none())
     }
   }
 }
 
-pub fn save_jwt_token(token: String) {
-  use local_storage <- result.try(storage.local())
-  storage.set_item(local_storage, "jwt_token", token)
-}
-
-pub fn send_auth(email: String, password: String) -> Effect(Msg) {
-  let payload =
+pub fn authorization(email: String, password: String) -> Effect(Msg) {
+  let body =
     json.object([
       #("email", json.string(email)),
       #("password", json.string(password)),
     ])
 
-  let decoder =
-    dynamic.decode1(SigninResponse, dynamic.field("jwt_token", dynamic.string))
+  let handler = rsvp.expect_json(decode_auth(), ApiAuthPost)
+  rsvp.post(env.post_signin, body, handler)
+}
 
-  lustre_http.post(
-    env.post_signin,
-    payload,
-    lustre_http.expect_json(decoder, GotResponseAuth),
-  )
+pub fn decode_auth() {
+  use token <- decode.field("jwt_token", decode.string)
+  decode.success(SigninResponse(jwt_token: token))
 }
 
 pub fn view(model: Auth) -> Element(Msg) {
@@ -129,8 +106,8 @@ pub fn view(model: Auth) -> Element(Msg) {
         [attribute.style([#("margin-left", "300px"), #("margin-top", "50px")])],
         html.div([], [
           html.div([], [
-            case model.result.signup {
-              Some(text) -> html.div([], [element.text(text)])
+            case model.response {
+              Some(result) -> html.div([], [element.text(result)])
               None -> html.div([], [element.text("")])
             },
           ]),

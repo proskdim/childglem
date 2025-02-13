@@ -1,5 +1,5 @@
-import auth/signup
 import auth/signin
+import auth/signup
 import lustre
 import lustre/attribute
 import lustre/effect.{type Effect}

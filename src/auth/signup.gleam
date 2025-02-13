@@ -1,4 +1,5 @@
 import env
+import gleam/http/response.{type Response}
 import gleam/json
 import gleam/option.{type Option, None, Some}
 import lustre
@@ -8,14 +9,14 @@ import lustre/element.{type Element, element}
 import lustre/element/html
 import lustre/event
 import lustre/ui
-import lustre_http
+import rsvp
+
+const http_200 = "success authentication"
+
+const http_fail = "failed authentication"
 
 pub type Auth {
-  Auth(email: String, password: String, result: AuthResult)
-}
-
-pub type AuthResult {
-  AuthResult(signup: Option(String))
+  Auth(email: String, password: String, response: Option(String))
 }
 
 pub type Msg {
@@ -23,8 +24,8 @@ pub type Msg {
   EmailUpdateInput(value: String)
   PasswordUpdateInput(value: String)
 
-  SendAuth
-  GotResponseAuth(Result(Nil, lustre_http.HttpError))
+  CreateUser
+  ApiAuthPost(Result(Response(String), rsvp.Error))
 }
 
 pub fn main() {
@@ -37,65 +38,46 @@ pub fn app() {
 }
 
 pub fn init(_flags) -> #(Auth, Effect(Msg)) {
-  #(Auth(AuthResult(signup: None), email: "", password: ""), effect.none())
+  #(Auth(email: "", password: "", response: None), effect.none())
 }
 
 pub fn update(model: Auth, msg: Msg) -> #(Auth, Effect(Msg)) {
   case msg {
-    Init -> #(model, effect.none())
-    EmailUpdateInput(email) -> #(Auth(..model, email: email), effect.none())
-    PasswordUpdateInput(password) -> #(
-      Auth(..model, password: password),
-      effect.none(),
-    )
-
-    SendAuth -> {
-      let email = model.email
-      let password = model.password
-
-      #(model, send_auth(email, password))
+    Init -> {
+      #(model, effect.none())
     }
 
-    GotResponseAuth(Ok(_)) -> {
-      #(
-        Auth(
-          ..model,
-          result: AuthResult(signup: Some("success authentication")),
-        ),
-        effect.none(),
-      )
+    EmailUpdateInput(email) -> {
+      #(Auth(..model, email: email), effect.none())
     }
-    GotResponseAuth(Error(http_error)) -> {
-      case http_error {
-        lustre_http.OtherError(_, _) -> #(
-          Auth(..model, result: AuthResult(signup: Some("user already exist"))),
-          effect.none(),
-        )
-        lustre_http.InternalServerError(_) -> #(
-          Auth(..model, result: AuthResult(signup: Some("internal server error"))),
-          effect.none(),
-        )
-        _ -> #(
-          Auth(..model, result: AuthResult(signup: Some("failed authentication"))),
-          effect.none(),
-        )
-      }
+
+    PasswordUpdateInput(password) -> {
+      #(Auth(..model, password: password), effect.none())
+    }
+
+    CreateUser -> {
+      #(model, create_user(model.email, model.password))
+    }
+
+    ApiAuthPost(Ok(_)) -> {
+      #(Auth(..model, response: Some(http_200)), effect.none())
+    }
+
+    ApiAuthPost(Error(_)) -> {
+      #(Auth(..model, response: Some(http_fail)), effect.none())
     }
   }
 }
 
-pub fn send_auth(email: String, password: String) -> Effect(Msg) {
-  let payload =
+pub fn create_user(email: String, password: String) -> Effect(Msg) {
+  let body =
     json.object([
       #("email", json.string(email)),
       #("password", json.string(password)),
     ])
 
-  lustre_http.post(
-    env.post_signup,
-    payload,
-    lustre_http.expect_anything(GotResponseAuth),
-  )
+  let handler = rsvp.expect_ok_response(ApiAuthPost)
+  rsvp.post(env.post_signup, body, handler)
 }
 
 pub fn view(model: Auth) -> Element(Msg) {
@@ -108,7 +90,7 @@ pub fn view(model: Auth) -> Element(Msg) {
         [attribute.style([#("margin-left", "300px"), #("margin-top", "50px")])],
         html.div([], [
           html.div([], [
-            case model.result.signup {
+            case model.response {
               Some(text) -> html.div([], [element.text(text)])
               None -> html.div([], [element.text("")])
             },
@@ -152,7 +134,7 @@ pub fn view(model: Auth) -> Element(Msg) {
                 ),
               ),
             ]),
-            ui.button([event.on_click(SendAuth)], [element.text("Send")]),
+            ui.button([event.on_click(CreateUser)], [element.text("Send")]),
           ),
         ),
       ),
