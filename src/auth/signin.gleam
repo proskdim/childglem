@@ -1,3 +1,4 @@
+import plinth/browser/window
 import auth/jwt
 import env
 import gleam/dynamic/decode
@@ -60,11 +61,14 @@ pub fn update(model: Auth, msg: Msg) -> #(Auth, Effect(Msg)) {
       #(Auth(..model, password: password), effect.none())
     }
 
-    SendAuth -> { #(model, authorization(model)) }
+    SendAuth -> {
+      #(model, authorization(model))
+    }
 
     ApiAuthPost(Ok(r)) -> {
       case jwt.save(r.jwt_token) {
         Ok(_) -> {
+          window.reload()
           #(Auth(..model, response: Some(http_200)), effect.none())
         }
         Error(_) -> {
