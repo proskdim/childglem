@@ -56,7 +56,7 @@ pub fn update(model: Auth, msg: Msg) -> #(Auth, Effect(Msg)) {
     }
 
     CreateUser -> {
-      #(model, create_user(model.email, model.password))
+      #(model, create_user(model))
     }
 
     ApiAuthPost(Ok(_)) -> {
@@ -69,11 +69,11 @@ pub fn update(model: Auth, msg: Msg) -> #(Auth, Effect(Msg)) {
   }
 }
 
-pub fn create_user(email: String, password: String) -> Effect(Msg) {
+fn create_user(user: Auth) -> Effect(Msg) {
   let body =
     json.object([
-      #("email", json.string(email)),
-      #("password", json.string(password)),
+      #("email", json.string(user.email)),
+      #("password", json.string(user.password)),
     ])
 
   let handler = rsvp.expect_ok_response(ApiAuthPost)

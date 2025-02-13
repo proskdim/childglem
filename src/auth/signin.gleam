@@ -60,12 +60,10 @@ pub fn update(model: Auth, msg: Msg) -> #(Auth, Effect(Msg)) {
       #(Auth(..model, password: password), effect.none())
     }
 
-    SendAuth -> {
-      #(model, authorization(model.email, model.password))
-    }
+    SendAuth -> { #(model, authorization(model)) }
 
     ApiAuthPost(Ok(r)) -> {
-      case jwt.save(r.jwt_token, "j.t") {
+      case jwt.save(r.jwt_token) {
         Ok(_) -> {
           #(Auth(..model, response: Some(http_200)), effect.none())
         }
@@ -80,11 +78,11 @@ pub fn update(model: Auth, msg: Msg) -> #(Auth, Effect(Msg)) {
   }
 }
 
-pub fn authorization(email: String, password: String) -> Effect(Msg) {
+fn authorization(user: Auth) -> Effect(Msg) {
   let body =
     json.object([
-      #("email", json.string(email)),
-      #("password", json.string(password)),
+      #("email", json.string(user.email)),
+      #("password", json.string(user.password)),
     ])
 
   let handler = rsvp.expect_json(decode_auth(), ApiAuthPost)

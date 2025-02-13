@@ -4489,19 +4489,20 @@ function setItem(storage, keyName, keyValue) {
   }
 }
 
+// build/dev/javascript/childglem/env.mjs
+var jwt_key = "7bc3c9fc";
+var post_signup = "http://localhost:8080/api/v1/signup";
+var post_signin = "http://localhost:8080/api/v1/signin";
+
 // build/dev/javascript/childglem/auth/jwt.mjs
-function save(token, storage_key) {
+function save(token) {
   return try$(
     sessionStorage(),
-    (local_storage) => {
-      return setItem(local_storage, storage_key, token);
+    (storage) => {
+      return setItem(storage, jwt_key, token);
     }
   );
 }
-
-// build/dev/javascript/childglem/env.mjs
-var post_signup = "http://localhost:8080/api/v1/signup";
-var post_signin = "http://localhost:8080/api/v1/signin";
 
 // build/dev/javascript/childglem/auth/signin.mjs
 var Auth = class extends CustomType {
@@ -4552,11 +4553,11 @@ function decode_auth() {
     }
   );
 }
-function authorization(email, password) {
+function authorization(user) {
   let body = object2(
     toList([
-      ["email", string4(email)],
-      ["password", string4(password)]
+      ["email", string4(user.email)],
+      ["password", string4(user.password)]
     ])
   );
   let handler = expect_json(
@@ -4687,10 +4688,10 @@ function update(model, msg) {
       none()
     ];
   } else if (msg instanceof SendAuth) {
-    return [model, authorization(model.email, model.password)];
+    return [model, authorization(model)];
   } else if (msg instanceof ApiAuthPost && msg[0].isOk()) {
     let r = msg[0][0];
-    let $ = save(r.jwt_token, "j.t");
+    let $ = save(r.jwt_token);
     if ($.isOk()) {
       return [
         (() => {
@@ -4756,11 +4757,11 @@ var ApiAuthPost2 = class extends CustomType {
 function init3(_) {
   return [new Auth2("", "", new None()), none()];
 }
-function create_user(email, password) {
+function create_user(user) {
   let body = object2(
     toList([
-      ["email", string4(email)],
-      ["password", string4(password)]
+      ["email", string4(user.email)],
+      ["password", string4(user.password)]
     ])
   );
   let handler = expect_ok_response(
@@ -4890,7 +4891,7 @@ function update2(model, msg) {
       none()
     ];
   } else if (msg instanceof CreateUser) {
-    return [model, create_user(model.email, model.password)];
+    return [model, create_user(model)];
   } else if (msg instanceof ApiAuthPost2 && msg[0].isOk()) {
     return [
       (() => {
