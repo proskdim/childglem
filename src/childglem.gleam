@@ -1,7 +1,6 @@
 import auth/jwt
 import auth/signin
 import auth/signup
-import gleam/io
 import gleam/result
 import gleam/string
 import lustre
@@ -12,7 +11,6 @@ import lustre/element/html
 import lustre/event
 import lustre/ui
 import lustre/ui/button
-import plinth/browser/window
 
 pub type Msg =
   Pages
@@ -93,9 +91,7 @@ pub fn view(router: Router) -> Element(Msg) {
         }
 
         False -> {
-          html.div([], [
-           element.text("table")
-          ])
+          html.div([], [element.text("table")])
         }
       },
     ]),

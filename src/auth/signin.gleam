@@ -1,4 +1,3 @@
-import plinth/browser/window
 import auth/jwt
 import env
 import gleam/dynamic/decode
@@ -11,6 +10,7 @@ import lustre/element.{type Element, element}
 import lustre/element/html
 import lustre/event
 import lustre/ui
+import plinth/browser/window
 import rsvp
 
 const http_200 = "success authorization"

@@ -301,60 +301,29 @@ function unwrap(option, default$) {
   }
 }
 
-// build/dev/javascript/gleam_stdlib/gleam/result.mjs
-function map(result, fun) {
-  if (result.isOk()) {
-    let x = result[0];
-    return new Ok(fun(x));
-  } else {
-    let e = result[0];
-    return new Error(e);
-  }
+// build/dev/javascript/gleam_stdlib/gleam/string.mjs
+function concat2(strings) {
+  let _pipe = strings;
+  let _pipe$1 = concat(_pipe);
+  return identity(_pipe$1);
 }
-function map_error(result, fun) {
-  if (result.isOk()) {
-    let x = result[0];
-    return new Ok(x);
-  } else {
-    let error = result[0];
-    return new Error(fun(error));
-  }
-}
-function try$(result, fun) {
-  if (result.isOk()) {
-    let x = result[0];
-    return fun(x);
-  } else {
-    let e = result[0];
-    return new Error(e);
-  }
-}
-function then$(result, fun) {
-  return try$(result, fun);
-}
-function unwrap2(result, default$) {
-  if (result.isOk()) {
-    let v = result[0];
-    return v;
-  } else {
-    return default$;
-  }
-}
-function unwrap_both(result) {
-  if (result.isOk()) {
-    let a = result[0];
-    return a;
-  } else {
-    let a = result[0];
-    return a;
-  }
-}
-function replace_error(result, error) {
-  if (result.isOk()) {
-    let x = result[0];
-    return new Ok(x);
-  } else {
-    return new Error(error);
+function drop_start(loop$string, loop$num_graphemes) {
+  while (true) {
+    let string6 = loop$string;
+    let num_graphemes = loop$num_graphemes;
+    let $ = num_graphemes > 0;
+    if (!$) {
+      return string6;
+    } else {
+      let $1 = pop_grapheme(string6);
+      if ($1.isOk()) {
+        let string$1 = $1[0][1];
+        loop$string = string$1;
+        loop$num_graphemes = num_graphemes - 1;
+      } else {
+        return string6;
+      }
+    }
   }
 }
 
@@ -371,7 +340,7 @@ function map_errors(result, f) {
   return map_error(
     result,
     (_capture) => {
-      return map2(_capture, f);
+      return map(_capture, f);
     }
   );
 }
@@ -403,7 +372,7 @@ function push_path(error, name) {
     toList([
       decode_string,
       (x) => {
-        return map(decode_int(x), to_string);
+        return map2(decode_int(x), to_string);
       }
     ])
   );
@@ -1386,7 +1355,7 @@ function map_loop(loop$list, loop$fun, loop$acc) {
     }
   }
 }
-function map2(list2, fun) {
+function map(list2, fun) {
   return map_loop(list2, fun, toList([]));
 }
 function append_loop(loop$first, loop$second) {
@@ -1403,7 +1372,7 @@ function append_loop(loop$first, loop$second) {
     }
   }
 }
-function append2(first2, second) {
+function append3(first2, second) {
   return append_loop(reverse(first2), second);
 }
 function fold(loop$list, loop$initial, loop$fun) {
@@ -1504,29 +1473,60 @@ function key_set(list2, key3, value4) {
   return key_set_loop(list2, key3, value4, toList([]));
 }
 
-// build/dev/javascript/gleam_stdlib/gleam/string.mjs
-function concat2(strings) {
-  let _pipe = strings;
-  let _pipe$1 = concat(_pipe);
-  return identity(_pipe$1);
+// build/dev/javascript/gleam_stdlib/gleam/result.mjs
+function map2(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return new Ok(fun(x));
+  } else {
+    let e = result[0];
+    return new Error(e);
+  }
 }
-function drop_start(loop$string, loop$num_graphemes) {
-  while (true) {
-    let string6 = loop$string;
-    let num_graphemes = loop$num_graphemes;
-    let $ = num_graphemes > 0;
-    if (!$) {
-      return string6;
-    } else {
-      let $1 = pop_grapheme(string6);
-      if ($1.isOk()) {
-        let string$1 = $1[0][1];
-        loop$string = string$1;
-        loop$num_graphemes = num_graphemes - 1;
-      } else {
-        return string6;
-      }
-    }
+function map_error(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return new Ok(x);
+  } else {
+    let error = result[0];
+    return new Error(fun(error));
+  }
+}
+function try$(result, fun) {
+  if (result.isOk()) {
+    let x = result[0];
+    return fun(x);
+  } else {
+    let e = result[0];
+    return new Error(e);
+  }
+}
+function then$(result, fun) {
+  return try$(result, fun);
+}
+function unwrap2(result, default$) {
+  if (result.isOk()) {
+    let v = result[0];
+    return v;
+  } else {
+    return default$;
+  }
+}
+function unwrap_both(result) {
+  if (result.isOk()) {
+    let a = result[0];
+    return a;
+  } else {
+    let a = result[0];
+    return a;
+  }
+}
+function replace_error(result, error) {
+  if (result.isOk()) {
+    let x = result[0];
+    return new Ok(x);
+  } else {
+    return new Error(error);
   }
 }
 
@@ -1675,7 +1675,7 @@ function push_path2(layer, path) {
       })()
     ])
   );
-  let path$1 = map2(
+  let path$1 = map(
     path,
     (key3) => {
       let key$1 = identity(key3);
@@ -1688,14 +1688,14 @@ function push_path2(layer, path) {
       }
     }
   );
-  let errors = map2(
+  let errors = map(
     layer[1],
     (error) => {
       let _record = error;
       return new DecodeError2(
         _record.expected,
         _record.found,
-        append2(path$1, error.path)
+        append3(path$1, error.path)
       );
     }
   );
@@ -1760,7 +1760,7 @@ function subfield(field_path, field_decoder, next) {
       let $1 = next(out).function(data);
       let out$1 = $1[0];
       let errors2 = $1[1];
-      return [out$1, append2(errors1, errors2)];
+      return [out$1, append3(errors1, errors2)];
     }
   );
 }
@@ -3077,7 +3077,7 @@ function on_input(msg) {
     "input",
     (event2) => {
       let _pipe = value2(event2);
-      return map(_pipe, msg);
+      return map2(_pipe, msg);
     }
   );
 }
@@ -3164,6 +3164,81 @@ var button3 = button2;
 var centre2 = centre;
 var field4 = field3;
 var input3 = input2;
+
+// build/dev/javascript/plinth/storage_ffi.mjs
+function sessionStorage() {
+  try {
+    if (globalThis.Storage && globalThis.sessionStorage instanceof globalThis.Storage) {
+      return new Ok(globalThis.sessionStorage);
+    } else {
+      return new Error(null);
+    }
+  } catch {
+    return new Error(null);
+  }
+}
+function getItem(storage, keyName) {
+  return null_or(storage.getItem(keyName));
+}
+function setItem(storage, keyName, keyValue) {
+  try {
+    storage.setItem(keyName, keyValue);
+    return new Ok(null);
+  } catch {
+    return new Error(null);
+  }
+}
+function removeItem(storage, keyName) {
+  storage.removeItem(keyName);
+}
+function null_or(val) {
+  if (val !== null) {
+    return new Ok(val);
+  } else {
+    return new Error(null);
+  }
+}
+
+// build/dev/javascript/childglem/env.mjs
+var jwt_key = "7bc3c9fc";
+var post_signup = "http://localhost:8080/api/v1/signup";
+var post_signin = "http://localhost:8080/api/v1/signin";
+
+// build/dev/javascript/childglem/auth/jwt.mjs
+function save(token) {
+  return try$(
+    sessionStorage(),
+    (stor) => {
+      return try$(
+        setItem(stor, jwt_key, token),
+        (res) => {
+          return new Ok(res);
+        }
+      );
+    }
+  );
+}
+function fetch2() {
+  return try$(
+    sessionStorage(),
+    (stor) => {
+      return try$(
+        getItem(stor, jwt_key),
+        (item) => {
+          return new Ok(item);
+        }
+      );
+    }
+  );
+}
+function delete$2() {
+  return try$(
+    sessionStorage(),
+    (stor) => {
+      return new Ok(removeItem(stor, jwt_key));
+    }
+  );
+}
 
 // build/dev/javascript/gleam_javascript/gleam_javascript_ffi.mjs
 var PromiseLayer = class _PromiseLayer {
@@ -3351,81 +3426,6 @@ async function import_(string6) {
   } catch (error) {
     return new Error(error.toString());
   }
-}
-
-// build/dev/javascript/plinth/storage_ffi.mjs
-function sessionStorage() {
-  try {
-    if (globalThis.Storage && globalThis.sessionStorage instanceof globalThis.Storage) {
-      return new Ok(globalThis.sessionStorage);
-    } else {
-      return new Error(null);
-    }
-  } catch {
-    return new Error(null);
-  }
-}
-function getItem(storage, keyName) {
-  return null_or(storage.getItem(keyName));
-}
-function setItem(storage, keyName, keyValue) {
-  try {
-    storage.setItem(keyName, keyValue);
-    return new Ok(null);
-  } catch {
-    return new Error(null);
-  }
-}
-function removeItem(storage, keyName) {
-  storage.removeItem(keyName);
-}
-function null_or(val) {
-  if (val !== null) {
-    return new Ok(val);
-  } else {
-    return new Error(null);
-  }
-}
-
-// build/dev/javascript/childglem/env.mjs
-var jwt_key = "7bc3c9fc";
-var post_signup = "http://localhost:8080/api/v1/signup";
-var post_signin = "http://localhost:8080/api/v1/signin";
-
-// build/dev/javascript/childglem/auth/jwt.mjs
-function save(token) {
-  return try$(
-    sessionStorage(),
-    (stor) => {
-      return try$(
-        setItem(stor, jwt_key, token),
-        (res) => {
-          return new Ok(res);
-        }
-      );
-    }
-  );
-}
-function fetch2() {
-  return try$(
-    sessionStorage(),
-    (stor) => {
-      return try$(
-        getItem(stor, jwt_key),
-        (item) => {
-          return new Ok(item);
-        }
-      );
-    }
-  );
-}
-function delete$2() {
-  return try$(
-    sessionStorage(),
-    (stor) => {
-      return new Ok(removeItem(stor, jwt_key));
-    }
-  );
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/uri.mjs
@@ -4679,7 +4679,7 @@ function post(url, body2, handler) {
   if ($.isOk()) {
     let uri = $[0];
     let _pipe = from_uri(uri);
-    let _pipe$1 = map(
+    let _pipe$1 = map2(
       _pipe,
       (request) => {
         let _pipe$12 = request;
@@ -5233,7 +5233,7 @@ function main() {
     throw makeError(
       "let_assert",
       "childglem",
-      35,
+      33,
       "main",
       "Pattern match failed, no pattern matched the value.",
       { value: $2 }
