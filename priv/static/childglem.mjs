@@ -7213,8 +7213,9 @@ var Reservation = class extends CustomType {
   }
 };
 var Child = class extends CustomType {
-  constructor(name, age, birthday) {
+  constructor(id, name, age, birthday) {
     super();
+    this.id = id;
     this.name = name;
     this.age = age;
     this.birthday = birthday;
@@ -7291,18 +7292,24 @@ function decode_childs(model) {
     (() => {
       let _pipe = list3(
         field5(
-          "name",
+          "id",
           string6,
-          (name) => {
+          (id) => {
             return field5(
-              "age",
-              int5,
-              (age) => {
+              "name",
+              string6,
+              (name) => {
                 return field5(
-                  "birthday",
-                  time_decoder(),
-                  (birthday) => {
-                    return decoded(new Child(name, age, birthday));
+                  "age",
+                  int5,
+                  (age) => {
+                    return field5(
+                      "birthday",
+                      time_decoder(),
+                      (birthday) => {
+                        return decoded(new Child(id, name, age, birthday));
+                      }
+                    );
                   }
                 );
               }

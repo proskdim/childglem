@@ -1,4 +1,5 @@
 import auth/jwt
+import birl
 import env
 import gleam/dynamic
 import gleam/http/request
@@ -7,6 +8,7 @@ import gleam/int
 import gleam/io
 import gleam/json
 import gleam/list
+import gleam/order
 import gleam/result
 import gleam/uri
 import lustre
@@ -18,8 +20,6 @@ import lustre/event
 import lustre/ui
 import rsvp
 import toy
-import birl
-import gleam/order
 
 pub type Reservation {
   Reservation(
@@ -32,7 +32,7 @@ pub type Reservation {
 }
 
 pub type Child {
-  Child(name: String, age: Int, birthday: birl.Time)
+  Child(id: String, name: String, age: Int, birthday: birl.Time)
 }
 
 pub type Msg {
@@ -126,14 +126,12 @@ pub fn decode_childs(model: Reservation) {
   use childs <- toy.field(
     "data",
     toy.list({
+      use id <- toy.field("id", toy.string)
       use name <- toy.field("name", toy.string)
       use age <- toy.field("age", toy.int)
-      use birthday <- toy.field(
-        "birthday",
-        time_decoder()
-      )
+      use birthday <- toy.field("birthday", time_decoder())
 
-      toy.decoded(Child(name:, age:, birthday:))
+      toy.decoded(Child(id:, name:, age:, birthday:))
     })
       |> toy.list_nonempty,
   )
@@ -156,7 +154,7 @@ pub fn time_decoder() {
 pub fn time_future(val: birl.Time) {
   case birl.compare(val, birl.now()) {
     order.Gt -> Ok(Nil)
-    _ ->{
+    _ -> {
       io.debug(val)
       Error([
         toy.ToyError(
