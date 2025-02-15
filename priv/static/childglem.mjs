@@ -1262,6 +1262,9 @@ function map_get(map7, key3) {
 function map_insert(key3, value4, map7) {
   return map7.set(key3, value4);
 }
+function percent_encode(string7) {
+  return encodeURIComponent(string7).replace("%2B", "+");
+}
 function classify_dynamic(data) {
   if (typeof data === "string") {
     return "String";
@@ -1481,6 +1484,22 @@ function keys(dict2) {
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
+function length_loop(loop$list, loop$count) {
+  while (true) {
+    let list3 = loop$list;
+    let count = loop$count;
+    if (list3.atLeastLength(1)) {
+      let list$1 = list3.tail;
+      loop$list = list$1;
+      loop$count = count + 1;
+    } else {
+      return count;
+    }
+  }
+}
+function length2(list3) {
+  return length_loop(list3, 0);
+}
 function reverse_and_prepend(loop$prefix, loop$suffix) {
   while (true) {
     let prefix = loop$prefix;
@@ -1589,6 +1608,33 @@ function find_map(loop$list, loop$fun) {
         loop$fun = fun;
       }
     }
+  }
+}
+function intersperse_loop(loop$list, loop$separator, loop$acc) {
+  while (true) {
+    let list3 = loop$list;
+    let separator = loop$separator;
+    let acc = loop$acc;
+    if (list3.hasLength(0)) {
+      return reverse(acc);
+    } else {
+      let first$1 = list3.head;
+      let rest$1 = list3.tail;
+      loop$list = rest$1;
+      loop$separator = separator;
+      loop$acc = prepend(first$1, prepend(separator, acc));
+    }
+  }
+}
+function intersperse(list3, elem) {
+  if (list3.hasLength(0)) {
+    return list3;
+  } else if (list3.hasLength(1)) {
+    return list3;
+  } else {
+    let first$1 = list3.head;
+    let rest$1 = list3.tail;
+    return intersperse_loop(rest$1, elem, toList([first$1]));
   }
 }
 function key_find(keyword_list, desired_key) {
@@ -4598,6 +4644,29 @@ function set_body(req, body2) {
   let query = req.query;
   return new Request(method, headers, body2, scheme, host, port, path, query);
 }
+function set_query(req, query) {
+  let pair = (t) => {
+    return percent_encode(t[0]) + "=" + percent_encode(t[1]);
+  };
+  let query$1 = (() => {
+    let _pipe = query;
+    let _pipe$1 = map(_pipe, pair);
+    let _pipe$2 = intersperse(_pipe$1, "&");
+    let _pipe$3 = concat2(_pipe$2);
+    return new Some(_pipe$3);
+  })();
+  let _record = req;
+  return new Request(
+    _record.method,
+    _record.headers,
+    _record.body,
+    _record.scheme,
+    _record.host,
+    _record.port,
+    _record.path,
+    query$1
+  );
+}
 function set_method(req, method) {
   let _record = req;
   return new Request(
@@ -5584,9 +5653,10 @@ var int5 = /* @__PURE__ */ new Decoder2(decode_int3);
 
 // build/dev/javascript/childglem/table/table.mjs
 var Reservation = class extends CustomType {
-  constructor(childs, total, limit, page) {
+  constructor(childs, token, total, limit, page) {
     super();
     this.childs = childs;
+    this.token = token;
     this.total = total;
     this.limit = limit;
     this.page = page;
@@ -5605,7 +5675,11 @@ var ApiReturnedChilds = class extends CustomType {
     this[0] = x0;
   }
 };
-function fetch_childs(api_token) {
+var ApiNextChilds = class extends CustomType {
+};
+var ApiPreviousChilds = class extends CustomType {
+};
+function fetch_childs(api_token, page) {
   debug(api_token);
   let $ = parse2(get_childs);
   if ($.isOk()) {
@@ -5613,11 +5687,18 @@ function fetch_childs(api_token) {
     let $1 = from_uri(uri);
     if ($1.isOk()) {
       let req = $1[0];
-      let request = set_header(
-        req,
-        "authorization",
-        "Bearer " + api_token
-      );
+      let request = (() => {
+        let _pipe = req;
+        let _pipe$1 = set_header(
+          _pipe,
+          "authorization",
+          "Bearer " + api_token
+        );
+        return set_query(
+          _pipe$1,
+          toList([["page", to_string(page)]])
+        );
+      })();
       let handler = expect_ok_response(
         (var0) => {
           return new ApiReturnedChilds(var0);
@@ -5633,10 +5714,11 @@ function fetch_childs(api_token) {
 }
 function init4(_) {
   let token = unwrap2(fetch2(), "");
-  let f = fetch_childs(token);
-  return [new Reservation(toList([]), 0, 10, 1), f];
+  let page = 1;
+  let f = fetch_childs(token, page);
+  return [new Reservation(toList([]), token, 0, 10, page), f];
 }
-function decode_childs() {
+function decode_childs(model) {
   return field5(
     "data",
     (() => {
@@ -5671,7 +5753,16 @@ function decode_childs() {
                 int5,
                 (page) => {
                   return decoded(
-                    new Reservation(childs, total, limit, page)
+                    (() => {
+                      let _record = model;
+                      return new Reservation(
+                        childs,
+                        _record.token,
+                        total,
+                        limit,
+                        page
+                      );
+                    })()
                   );
                 }
               );
@@ -5690,19 +5781,33 @@ function update3(model, msg) {
       throw makeError(
         "let_assert",
         "table/table",
-        52,
+        63,
         "update",
         "Pattern match failed, no pattern matched the value.",
         { value: $ }
       );
     }
     let data = $[0];
-    let decoded_data = decode3(data, decode_childs());
+    let decoded_data = decode3(data, decode_childs(model));
     if (decoded_data.isOk()) {
       let reserv = decoded_data[0];
       return [reserv, none()];
     } else {
       return [model, none()];
+    }
+  } else if (msg instanceof ApiNextChilds) {
+    let $ = length2(model.childs) < model.limit;
+    if ($) {
+      return [model, none()];
+    } else {
+      return [model, fetch_childs(model.token, model.page + 1)];
+    }
+  } else if (msg instanceof ApiPreviousChilds) {
+    let $ = model.page <= 1;
+    if ($) {
+      return [model, none()];
+    } else {
+      return [model, fetch_childs(model.token, model.page - 1)];
     }
   } else {
     return [model, none()];
@@ -5804,6 +5909,21 @@ function view3(model) {
                 );
               }
             )
+          )
+        ])
+      ),
+      div(
+        toList([
+          style(toList([["display", "flex"], ["gap", "10px"]]))
+        ]),
+        toList([
+          button3(
+            toList([on_click(new ApiPreviousChilds())]),
+            toList([text("<")])
+          ),
+          button3(
+            toList([on_click(new ApiNextChilds())]),
+            toList([text(">")])
           )
         ])
       )

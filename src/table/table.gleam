@@ -14,11 +14,19 @@ import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
+import lustre/event
+import lustre/ui
 import rsvp
 import toy
 
 pub type Reservation {
-  Reservation(childs: List(Child), total: Int, limit: Int, page: Int)
+  Reservation(
+    childs: List(Child),
+    token: String,
+    total: Int,
+    limit: Int,
+    page: Int,
+  )
 }
 
 pub type Child {
@@ -27,6 +35,8 @@ pub type Child {
 
 pub type Msg {
   ApiReturnedChilds(Result(response.Response(String), rsvp.Error))
+  ApiNextChilds
+  ApiPreviousChilds
 }
 
 pub fn main() {
@@ -40,10 +50,11 @@ pub fn app() {
 
 pub fn init(_flags) -> #(Reservation, Effect(Msg)) {
   let token = result.unwrap(jwt.fetch(), "")
+  let page = 1
 
-  let f = fetch_childs(token)
+  let f = fetch_childs(token, page)
 
-  #(Reservation(childs: [], total: 0, limit: 10, page: 1), f)
+  #(Reservation(childs: [], token: token, total: 0, limit: 10, page:), f)
 }
 
 pub fn update(model: Reservation, msg: Msg) -> #(Reservation, Effect(Msg)) {
@@ -51,7 +62,7 @@ pub fn update(model: Reservation, msg: Msg) -> #(Reservation, Effect(Msg)) {
     ApiReturnedChilds(Ok(resp)) -> {
       let assert Ok(data) = json.decode(resp.body, dynamic.dynamic)
 
-      let decoded_data = toy.decode(data, decode_childs())
+      let decoded_data = toy.decode(data, decode_childs(model))
 
       case decoded_data {
         Ok(reserv) -> {
@@ -63,20 +74,40 @@ pub fn update(model: Reservation, msg: Msg) -> #(Reservation, Effect(Msg)) {
       }
     }
 
+    ApiNextChilds -> {
+      case list.length(model.childs) < model.limit {
+        True -> #(model, effect.none())
+        False -> #(model, fetch_childs(model.token, model.page + 1))
+      }
+    }
+
+    ApiPreviousChilds -> {
+      case model.page <= 1 {
+        True -> {
+          #(model, effect.none())
+        }
+        False -> {
+          #(model, fetch_childs(model.token, model.page - 1))
+        }
+      }
+    }
     ApiReturnedChilds(Error(_)) -> {
       #(model, effect.none())
     }
   }
 }
 
-pub fn fetch_childs(api_token: String) {
+pub fn fetch_childs(api_token: String, page: Int) {
   io.debug(api_token)
   case uri.parse(env.get_childs) {
     Ok(uri) -> {
       case request.from_uri(uri) {
         Ok(req) -> {
           let request =
-            request.set_header(req, "authorization", "Bearer " <> api_token)
+            req
+            |> request.set_header("authorization", "Bearer " <> api_token)
+            |> request.set_query([#("page", int.to_string(page))])
+
           let handler = rsvp.expect_ok_response(ApiReturnedChilds)
 
           rsvp.send(request, handler)
@@ -89,7 +120,7 @@ pub fn fetch_childs(api_token: String) {
   }
 }
 
-pub fn decode_childs() {
+pub fn decode_childs(model: Reservation) {
   use childs <- toy.field(
     "data",
     toy.list({
@@ -104,7 +135,7 @@ pub fn decode_childs() {
   use limit <- toy.field("limit", toy.int)
   use page <- toy.field("page", toy.int)
 
-  toy.decoded(Reservation(childs:, total:, limit:, page:))
+  toy.decoded(Reservation(..model, childs:, total:, limit:, page:))
 }
 
 pub fn view(model: Reservation) -> Element(Msg) {
@@ -168,6 +199,10 @@ pub fn view(model: Reservation) -> Element(Msg) {
           ])
         }),
       ),
+    ]),
+    html.div([attribute.style([#("display", "flex"), #("gap", "10px")])], [
+      ui.button([event.on_click(ApiPreviousChilds)], [element.text("<")]),
+      ui.button([event.on_click(ApiNextChilds)], [element.text(">")]),
     ]),
   ])
 }
