@@ -18,6 +18,8 @@ import lustre/event
 import lustre/ui
 import rsvp
 import toy
+import birl
+import gleam/order
 
 pub type Reservation {
   Reservation(
@@ -30,7 +32,7 @@ pub type Reservation {
 }
 
 pub type Child {
-  Child(name: String, age: Int)
+  Child(name: String, age: Int, birthday: birl.Time)
 }
 
 pub type Msg {
@@ -126,7 +128,12 @@ pub fn decode_childs(model: Reservation) {
     toy.list({
       use name <- toy.field("name", toy.string)
       use age <- toy.field("age", toy.int)
-      toy.decoded(Child(name:, age:))
+      use birthday <- toy.field(
+        "birthday",
+        time_decoder()
+      )
+
+      toy.decoded(Child(name:, age:, birthday:))
     })
       |> toy.list_nonempty,
   )
@@ -136,6 +143,29 @@ pub fn decode_childs(model: Reservation) {
   use page <- toy.field("page", toy.int)
 
   toy.decoded(Reservation(..model, childs:, total:, limit:, page:))
+}
+
+pub fn time_decoder() {
+  toy.string
+  |> toy.try_map(birl.now(), fn(val) {
+    birl.parse(val)
+    |> result.replace_error([toy.ToyError(toy.InvalidType("DateTime", val), [])])
+  })
+}
+
+pub fn time_future(val: birl.Time) {
+  case birl.compare(val, birl.now()) {
+    order.Gt -> Ok(Nil)
+    _ ->{
+      io.debug(val)
+      Error([
+        toy.ToyError(
+          toy.ValidationFailed("date_future", "DateTime", birl.to_http(val)),
+          [],
+        ),
+      ])
+    }
+  }
 }
 
 pub fn view(model: Reservation) -> Element(Msg) {
@@ -157,6 +187,7 @@ pub fn view(model: Reservation) -> Element(Msg) {
     #("border", "none"),
     #("background", "#F2F8F8"),
     #("border-bottom", "5px solid #F2F8F8"),
+    #("text-align", "left"),
   ]
 
   let table_td_style = [
@@ -195,6 +226,9 @@ pub fn view(model: Reservation) -> Element(Msg) {
             ]),
             html.td([attribute.style(table_td_style)], [
               element.text(int.to_string(child.age)),
+            ]),
+            html.td([attribute.style(table_td_style)], [
+              element.text(birl.to_date_string(child.birthday)),
             ]),
           ])
         }),
